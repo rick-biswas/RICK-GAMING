@@ -1,12 +1,7 @@
 {
-  "name": "ff-topup",
+  "name": "rg-topup-site",
   "version": "1.0.0",
-  "description": "Free Fire Topup Website",
-  "main": "server.js",
-  "scripts": {
-    "start": "node server.js"
-  },
-  "engines": {
-    "node": ">=16.0.0"
-  }
+  "private": true,
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
 }
