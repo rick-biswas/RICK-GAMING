@@ -3075,14 +3075,263 @@ setInterval(fetchFreshAccountConfig, 15000);
  function read(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
  function save(a){localStorage.setItem(KEY,JSON.stringify(a));}
  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
- function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':'';el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row"><span>Player ID</span><b>${esc(o.uid)}</b></div><div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});}
+ function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row"><span>Player ID</span><b>${esc(o.uid)}</b></div><div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});}
  window.renderOrders=render;
  document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"]');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"]');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
  document.querySelectorAll('[data-rg-method]').forEach(b=>b.addEventListener('click',()=>{method=b.dataset.rgMethod;document.querySelectorAll('[data-rg-method]').forEach(x=>x.classList.toggle('active',x===b));}));
- $('rgCopy').onclick=()=>{const n='01620576948';if(navigator.clipboard?.writeText)navigator.clipboard.writeText(n).then(()=>$('rgCopy').textContent='কপি হয়েছে').catch(()=>alert(n));else alert(n)};
+ $('rgCopy').onclick=()=>{const n=$('rgNumber').textContent.trim();if(navigator.clipboard?.writeText)navigator.clipboard.writeText(n).then(()=>$('rgCopy').textContent='কপি হয়েছে').catch(()=>alert(n));else alert(n)};
  $('rgClose').onclick=()=>$('rgPayModal').classList.remove('show');
  $('rgSubmit').onclick=()=>{const uid=$('rgUid').value.trim(),trx=$('rgTrx').value.trim();if(uid.length<6){alert('সঠিক Player UID দিন');return}if(trx.length<5){alert('সঠিক Transaction ID দিন');return}if(!current)return;const arr=read();const id='RG'+Date.now().toString().slice(-8);arr.push({id,package:current.package,price:current.price,uid,method,trx,status:'Pending',createdAt:new Date().toISOString()});save(arr);$('rgPayModal').classList.remove('show');render();location.hash='my-orders';alert('অর্ডার জমা হয়েছে। Status: Pending');};
  document.addEventListener('DOMContentLoaded',render);window.addEventListener('hashchange',render);setTimeout(render,500);
+})();
+</script>
+
+
+<!-- ============ ADMIN PANEL (open with index.html#admin) ============ -->
+<style>
+#adRoot{position:fixed;inset:0;z-index:10000;background:#f5f8ff;overflow:auto;color:#0f172a;font-family:inherit;-webkit-overflow-scrolling:touch}
+#adRoot[hidden]{display:none}
+#adRoot *{box-sizing:border-box}
+.ad-wrap{max-width:880px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 14px calc(env(safe-area-inset-bottom,0px) + 30px)}
+.ad-top{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.ad-top h1{font-size:20px;font-weight:850;flex:1}
+.ad-ic{width:38px;height:38px;border-radius:12px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:#fff;display:grid;place-items:center;font-weight:900}
+.ad-btn{border:1px solid #dbe3ef;background:#fff;color:#334155;border-radius:11px;padding:9px 13px;font:inherit;font-size:13px;font-weight:750;cursor:pointer}
+.ad-btn.pri{background:linear-gradient(135deg,#1687ef,#1458ce);color:#fff;border:0}
+.ad-btn.ok{background:#e8f7ee;color:#087443;border:0}
+.ad-btn.no{background:#fee4e2;color:#b42318;border:0}
+.ad-btn.wa{background:#fff4dc;color:#b45309;border:0}
+.ad-btn.gh{background:#eef2f8;border:0}
+.ad-tabs{display:flex;gap:8px;margin-bottom:14px;overflow-x:auto;padding-bottom:2px}
+.ad-tab{flex:1;min-width:max-content;border:1.5px solid #dbe3ef;background:#fff;border-radius:13px;padding:11px 14px;font:inherit;font-weight:800;color:#172554;cursor:pointer}
+.ad-tab.on{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
+.ad-card{background:#fff;border:1px solid #e1e8f5;border-radius:18px;padding:16px;margin-bottom:12px}
+.ad-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:12px}
+@media(min-width:680px){.ad-grid{grid-template-columns:repeat(4,1fr)}}
+.ad-stat{background:#fff;border:1px solid #e1e8f5;border-radius:16px;padding:14px}
+.ad-stat small{display:block;color:#64748b;font-size:12px;font-weight:700}
+.ad-stat b{display:block;font-size:22px;font-weight:900;margin-top:4px}
+.ad-chart{display:flex;align-items:flex-end;gap:8px;height:130px;margin-top:12px}
+.ad-bar{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;gap:5px;font-size:11px;color:#64748b;font-weight:700}
+.ad-bar i{display:block;width:100%;background:linear-gradient(180deg,#3b82f6,#1d4ed8);border-radius:8px 8px 3px 3px;min-height:3px}
+.ad-search{width:100%;border:1px solid #d8e0ec;border-radius:13px;padding:13px;font:inherit;outline:none;background:#fff}
+.ad-search:focus{border-color:#2563eb}
+.ad-chips{display:flex;gap:8px;margin:10px 0;overflow-x:auto}
+.ad-chip{border:0;border-radius:99px;padding:8px 14px;font:inherit;font-size:13px;font-weight:800;background:#e9eef8;color:#334155;white-space:nowrap;cursor:pointer}
+.ad-chip.on{background:#2563eb;color:#fff}
+.ad-ord-h{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.ad-ord-h b{flex:1;font-size:15px}
+.ad-st{border-radius:99px;padding:5px 11px;font-size:12px;font-weight:800;background:#e3f9ec;color:#067647}
+.ad-st.Pending{background:#fff4dc;color:#b45309}
+.ad-st.Cancelled{background:#fee4e2;color:#b42318}
+.ad-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #e8edf6;font-size:13.5px}
+.ad-row span{color:#64748b}
+.ad-row b{text-align:right;word-break:break-all}
+.ad-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.ad-field{display:block;margin:12px 0 6px;font-size:13px;font-weight:750}
+.ad-empty{text-align:center;color:#64748b;padding:34px 10px}
+.ad-login{max-width:380px;margin:12vh auto 0}
+.ad-login h2{font-size:22px;font-weight:850;margin-bottom:6px}
+.ad-note{color:#64748b;font-size:12.5px;line-height:1.6}
+.ad-toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);transform:translateX(-50%);background:#0f172a;color:#fff;padding:11px 18px;border-radius:12px;font-size:13px;font-weight:700;opacity:0;pointer-events:none;transition:.25s;z-index:10001}
+.ad-toast.show{opacity:1}
+</style>
+
+<div id="adRoot" hidden></div>
+<div class="ad-toast" id="adToast"></div>
+
+<script>
+(function(){
+  var ORD_KEY='rickGamingManualOrdersV1', PASS_KEY='rgAdminPassHashV1', PAY_KEY='rgPayNumberV1', SES_KEY='rgAdminSession';
+  var root=document.getElementById('adRoot'), toastEl=document.getElementById('adToast'), tt;
+  var S={tab:'dash',filter:'All',q:''};
+
+  function $(s,r){return (r||document).querySelector(s)}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toastEl.classList.remove('show')},2200)}
+  function getOrders(){try{var a=JSON.parse(localStorage.getItem(ORD_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
+  function setOrders(a){localStorage.setItem(ORD_KEY,JSON.stringify(a));if(window.renderOrders)try{window.renderOrders()}catch(e){}}
+  function getPay(){return localStorage.getItem(PAY_KEY)||'01620576948'}
+  function applyPay(){var n=document.getElementById('rgNumber');if(n)n.textContent=getPay()}
+  function money(n){return '৳'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})}
+  function fmt(iso){var d=new Date(iso);return isNaN(d)?'-':d.toLocaleDateString('en-GB')+' '+d.toLocaleTimeString('en-US')}
+
+  function hash(s){
+    if(window.crypto&&crypto.subtle&&window.TextEncoder){
+      return crypto.subtle.digest('SHA-256',new TextEncoder().encode('rg::'+s)).then(function(b){
+        return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('');
+      });
+    }
+    return Promise.resolve('x'+btoa(unescape(encodeURIComponent('rg::'+s))));
+  }
+  function download(name,text,type){
+    var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;
+    document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500);
+  }
+  function copy(t){
+    if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('কপি হয়েছে')},function(){prompt('Copy:',t)});
+    else prompt('Copy:',t);
+  }
+
+  /* ---------- views ---------- */
+  function loginView(){
+    var first=!localStorage.getItem(PASS_KEY);
+    root.innerHTML='<div class="ad-wrap"><div class="ad-login ad-card">'
+      +'<div class="ad-ic" style="margin-bottom:12px">A</div>'
+      +'<h2>'+(first?'অ্যাডমিন পাসওয়ার্ড সেট করুন':'অ্যাডমিন লগইন')+'</h2>'
+      +'<p class="ad-note">'+(first?'প্রথমবার — একটি পাসওয়ার্ড দিন (কমপক্ষে ৪ অক্ষর)।':'প্যানেলে ঢুকতে পাসওয়ার্ড দিন।')+'</p>'
+      +'<input class="ad-search" id="adP1" type="password" placeholder="পাসওয়ার্ড" style="margin-top:12px">'
+      +(first?'<input class="ad-search" id="adP2" type="password" placeholder="আবার লিখুন" style="margin-top:10px">':'')
+      +'<button class="ad-btn pri" id="adGo" style="width:100%;margin-top:12px;padding:13px">'+(first?'সেট করুন':'লগইন')+'</button>'
+      +'<button class="ad-btn gh" id="adHome" style="width:100%;margin-top:8px">← সাইটে ফিরুন</button></div></div>';
+    function go(){
+      var p=$('#adP1').value;
+      if(first){
+        if(p.length<4)return toast('কমপক্ষে ৪ অক্ষর দিন');
+        if(p!==$('#adP2').value)return toast('দুটি পাসওয়ার্ড মেলেনি');
+        hash(p).then(function(h){localStorage.setItem(PASS_KEY,h);sessionStorage.setItem(SES_KEY,'1');render()});
+      }else{
+        hash(p).then(function(h){
+          if(h===localStorage.getItem(PASS_KEY)){sessionStorage.setItem(SES_KEY,'1');render()}
+          else toast('ভুল পাসওয়ার্ড');
+        });
+      }
+    }
+    $('#adGo').onclick=go;
+    root.querySelectorAll('input').forEach(function(i){i.onkeydown=function(e){if(e.key==='Enter')go()}});
+    $('#adHome').onclick=function(){location.hash=''};
+  }
+
+  function dashView(o){
+    var total=o.length,pend=0,done=0,canc=0,rev=0,pv=0;
+    o.forEach(function(x){
+      if(x.status==='Pending'){pend++;pv+=+x.price||0}
+      else if(x.status==='Cancelled')canc++;
+      else{done++;rev+=+x.price||0}
+    });
+    var days=[],names=['রবি','সোম','মঙ্গল','বুধ','বৃহ','শুক্র','শনি'];
+    for(var i=6;i>=0;i--){var d=new Date();d.setHours(0,0,0,0);d.setDate(d.getDate()-i);days.push({d:d,n:0})}
+    o.forEach(function(x){var t=new Date(x.createdAt);t.setHours(0,0,0,0);days.forEach(function(k){if(+k.d===+t)k.n++})});
+    var mx=Math.max.apply(null,days.map(function(k){return k.n}).concat([1]));
+    var stats=[['মোট অর্ডার',total],['Pending',pend],['Completed',done],['Cancelled',canc],['আয় (Completed)',money(rev)],['Pending টাকা',money(pv)]];
+    var latest=o.slice().reverse().slice(0,5);
+    return '<div class="ad-grid">'+stats.map(function(s){return '<div class="ad-stat"><small>'+s[0]+'</small><b>'+s[1]+'</b></div>'}).join('')+'</div>'
+      +'<div class="ad-card"><b>গত ৭ দিনের অর্ডার</b><div class="ad-chart">'
+      +days.map(function(k){return '<div class="ad-bar"><span>'+k.n+'</span><i style="height:'+Math.round(k.n/mx*100)+'%"></i><span>'+names[k.d.getDay()]+'</span></div>'}).join('')
+      +'</div></div>'
+      +'<div class="ad-card"><b>সাম্প্রতিক অর্ডার</b>'
+      +(latest.length?latest.map(function(x){return '<div class="ad-row"><span>#'+esc(x.id)+' · '+esc(x.package)+'</span><b>'+money(x.price)+' · '+esc(x.status)+'</b></div>'}).join(''):'<div class="ad-empty">এখনো কোনো অর্ডার নেই</div>')
+      +'</div>';
+  }
+
+  function ordersView(o){
+    var q=S.q.trim().toLowerCase();
+    var list=o.slice().reverse().filter(function(x){
+      if(S.filter!=='All'&&x.status!==S.filter)return false;
+      if(!q)return true;
+      return [x.id,x.uid,x.trx,x.package,x.method].join(' ').toLowerCase().indexOf(q)>-1;
+    });
+    var counts={All:o.length};o.forEach(function(x){counts[x.status]=(counts[x.status]||0)+1});
+    var chips=['All','Pending','Completed','Cancelled'].map(function(f){return '<button class="ad-chip'+(S.filter===f?' on':'')+'" data-filter="'+f+'">'+f+' ('+(counts[f]||0)+')</button>'}).join('');
+    return '<input class="ad-search" id="adQ" placeholder="অর্ডার ID / UID / TrxID / প্যাকেজ খুঁজুন" value="'+esc(S.q)+'">'
+      +'<div class="ad-chips">'+chips+'</div>'
+      +(list.length?list.map(function(x){
+        return '<div class="ad-card"><div class="ad-ord-h"><b>Order #'+esc(x.id)+'</b><span class="ad-st '+esc(x.status)+'">'+esc(x.status)+'</span></div>'
+        +'<div class="ad-row"><span>Package</span><b>'+esc(x.package)+'</b></div>'
+        +'<div class="ad-row"><span>Price</span><b>'+money(x.price)+'</b></div>'
+        +'<div class="ad-row"><span>Player UID</span><b>'+esc(x.uid)+'</b></div>'
+        +'<div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
+        +'<div class="ad-row"><span>তারিখ</span><b>'+fmt(x.createdAt)+'</b></div>'
+        +'<div class="ad-acts">'
+        +(x.status!=='Completed'?'<button class="ad-btn ok" data-act="Completed" data-id="'+esc(x.id)+'">✓ Complete</button>':'')
+        +(x.status!=='Cancelled'?'<button class="ad-btn no" data-act="Cancelled" data-id="'+esc(x.id)+'">✕ Cancel</button>':'')
+        +(x.status!=='Pending'?'<button class="ad-btn wa" data-act="Pending" data-id="'+esc(x.id)+'">↺ Pending</button>':'')
+        +'<button class="ad-btn gh" data-copy="'+esc(x.uid)+'">UID কপি</button>'
+        +'<button class="ad-btn gh" data-copy="'+esc(x.trx)+'">TrxID কপি</button>'
+        +'<button class="ad-btn gh" data-act="del" data-id="'+esc(x.id)+'">🗑 মুছুন</button>'
+        +'</div></div>';
+      }).join(''):'<div class="ad-empty">কোনো অর্ডার পাওয়া যায়নি</div>');
+  }
+
+  function settingsView(){
+    return '<div class="ad-card"><b>পেমেন্ট নম্বর</b><p class="ad-note">কাস্টমার পেমেন্ট পপআপে এই নম্বর দেখবে।</p>'
+      +'<input class="ad-search" id="adPay" inputmode="numeric" value="'+esc(getPay())+'" style="margin-top:10px">'
+      +'<button class="ad-btn pri" id="adSavePay" style="margin-top:10px">সেভ করুন</button></div>'
+      +'<div class="ad-card"><b>পাসওয়ার্ড পরিবর্তন</b>'
+      +'<input class="ad-search" id="adNp" type="password" placeholder="নতুন পাসওয়ার্ড" style="margin-top:10px">'
+      +'<button class="ad-btn pri" id="adSavePass" style="margin-top:10px">পরিবর্তন করুন</button></div>'
+      +'<div class="ad-card"><b>ডাটা ব্যাকআপ</b><p class="ad-note">অর্ডারগুলো এই ব্রাউজারের localStorage-এ থাকে। ব্রাউজার ডাটা মুছলে হারিয়ে যাবে — নিয়মিত ব্যাকআপ নিন।</p>'
+      +'<div class="ad-acts"><button class="ad-btn" id="adCsv">CSV Export</button><button class="ad-btn" id="adJson">JSON Backup</button>'
+      +'<button class="ad-btn" id="adImp">JSON Import</button><input type="file" id="adFile" accept=".json,application/json" hidden></div></div>'
+      +'<div class="ad-card"><b style="color:#b42318">ডেঞ্জার জোন</b><div class="ad-acts"><button class="ad-btn no" id="adClear">সব অর্ডার মুছুন</button></div></div>';
+  }
+
+  function render(){
+    if(!sessionStorage.getItem(SES_KEY)||!localStorage.getItem(PASS_KEY))return loginView();
+    var o=getOrders();
+    var tabs=[['dash','ড্যাশবোর্ড'],['orders','অর্ডার'],['set','সেটিংস']];
+    var body=S.tab==='dash'?dashView(o):S.tab==='orders'?ordersView(o):settingsView();
+    var keepQ=document.activeElement&&document.activeElement.id==='adQ';
+    root.innerHTML='<div class="ad-wrap"><div class="ad-top"><div class="ad-ic">A</div><h1>Admin Panel</h1>'
+      +'<button class="ad-btn" id="adSite">সাইট</button><button class="ad-btn no" id="adOut">লগআউট</button></div>'
+      +'<div class="ad-tabs">'+tabs.map(function(t){return '<button class="ad-tab'+(S.tab===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>'
+      +body+'</div>';
+    if(keepQ){var q=$('#adQ');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
+    bind();
+  }
+
+  function bind(){
+    $('#adSite').onclick=function(){location.hash=''};
+    $('#adOut').onclick=function(){sessionStorage.removeItem(SES_KEY);render()};
+    root.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){S.tab=b.dataset.tab;render()}});
+    root.querySelectorAll('[data-filter]').forEach(function(b){b.onclick=function(){S.filter=b.dataset.filter;render()}});
+    root.querySelectorAll('[data-copy]').forEach(function(b){b.onclick=function(){copy(b.dataset.copy)}});
+    var q=$('#adQ');if(q)q.oninput=function(){S.q=q.value;render()};
+    root.querySelectorAll('[data-act]').forEach(function(b){b.onclick=function(){act(b.dataset.act,b.dataset.id)}});
+    if(S.tab!=='set')return;
+    $('#adSavePay').onclick=function(){var v=$('#adPay').value.trim();if(v.length<6)return toast('সঠিক নম্বর দিন');localStorage.setItem(PAY_KEY,v);applyPay();toast('পেমেন্ট নম্বর সেভ হয়েছে')};
+    $('#adSavePass').onclick=function(){var v=$('#adNp').value;if(v.length<4)return toast('কমপক্ষে ৪ অক্ষর দিন');hash(v).then(function(h){localStorage.setItem(PASS_KEY,h);$('#adNp').value='';toast('পাসওয়ার্ড বদলানো হয়েছে')})};
+    $('#adCsv').onclick=function(){
+      var rows=[['ID','Package','Price','PlayerUID','Method','TrxID','Status','Created','Updated']].concat(getOrders().map(function(x){return [x.id,x.package,x.price,x.uid,x.method,x.trx,x.status,x.createdAt,(x.updatedDate||'')+' '+(x.updatedTime||'')]}));
+      download('orders-'+Date.now()+'.csv','\ufeff'+rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),'text/csv');
+    };
+    $('#adJson').onclick=function(){download('orders-backup-'+Date.now()+'.json',JSON.stringify(getOrders(),null,2),'application/json')};
+    $('#adImp').onclick=function(){$('#adFile').click()};
+    $('#adFile').onchange=function(e){
+      var f=e.target.files[0];if(!f)return;var r=new FileReader();
+      r.onload=function(){
+        try{
+          var inc=JSON.parse(r.result);if(!Array.isArray(inc))throw 0;
+          var cur=getOrders(),ids={};cur.forEach(function(x){ids[x.id]=1});var added=0;
+          inc.forEach(function(x){if(x&&x.id&&!ids[x.id]){cur.push(x);ids[x.id]=1;added++}});
+          setOrders(cur);toast(added+'টি অর্ডার ইমপোর্ট হয়েছে');render();
+        }catch(err){toast('ফাইলটি সঠিক নয়')}
+      };r.readAsText(f);
+    };
+    $('#adClear').onclick=function(){if(confirm('সব অর্ডার স্থায়ীভাবে মুছে যাবে। নিশ্চিত?')){setOrders([]);toast('সব অর্ডার মুছে ফেলা হয়েছে');render()}};
+  }
+
+  function act(a,id){
+    var o=getOrders(),i=o.findIndex(function(x){return x.id===id});if(i<0)return;
+    if(a==='del'){if(!confirm('Order #'+id+' মুছে ফেলবেন?'))return;o.splice(i,1);toast('অর্ডার মুছে গেছে')}
+    else{
+      var d=new Date();o[i].status=a;o[i].updatedDate=d.toLocaleDateString('en-GB');o[i].updatedTime=d.toLocaleTimeString('en-US');
+      toast('Order #'+id+' → '+a);
+    }
+    setOrders(o);render();
+  }
+
+  function sync(){
+    var on=location.hash==='#admin';
+    root.hidden=!on;
+    document.body.style.overflow=on?'hidden':'';
+    if(on){render();root.scrollTop=0}
+  }
+  window.addEventListener('hashchange',sync);
+  window.addEventListener('storage',function(e){if(e.key===ORD_KEY&&!root.hidden&&sessionStorage.getItem(SES_KEY))render()});
+  document.addEventListener('DOMContentLoaded',applyPay);
+  setTimeout(applyPay,300);
+  sync();
 })();
 </script>
 
