@@ -3053,142 +3053,36 @@ setInterval(fetchFreshAccountConfig, 15000);
   sync();
 })();
 </script>
-
-<style id="rick-payment-style">
-#rickPayModal{position:fixed;inset:0;z-index:99999;background:rgba(8,18,42,.62);display:none;align-items:flex-end;justify-content:center;padding:12px}
-#rickPayModal.show{display:flex}
-#rickPayModal .rp-sheet{width:min(100%,520px);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;padding:20px;box-shadow:0 24px 70px rgba(0,0,0,.3);font-family:inherit}
-#rickPayModal .rp-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
-#rickPayModal h2{font-size:20px;font-weight:850;color:#10234b}
-#rickPayModal .rp-close{border:0;background:#eef3ff;border-radius:50%;width:38px;height:38px;font-size:22px;color:#1d4ed8}
-#rickPayModal .rp-summary{background:#f2f6ff;border:1px solid #dbe6ff;padding:13px;border-radius:15px;margin-bottom:14px;line-height:1.7}
-#rickPayModal .rp-label{display:block;font-size:13px;font-weight:750;margin:12px 0 6px;color:#334155}
-#rickPayModal .rp-input{width:100%;height:46px;border:1px solid #cbd5e1;border-radius:11px;padding:0 12px;font:inherit;outline:none}
-#rickPayModal .rp-input:focus{border-color:#2563eb;box-shadow:0 0 0 3px #2563eb1c}
-#rickPayModal .rp-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-#rickPayModal .rp-method{border:1.5px solid #dbe3f0;background:#fff;border-radius:13px;padding:13px 8px;font-weight:800;color:#334155}
-#rickPayModal .rp-method.active{border-color:#2563eb;background:#eff6ff;color:#1d4ed8}
-#rickPayModal .rp-number{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f8fafc;border:1px dashed #94a3b8;border-radius:12px;padding:11px 12px;margin-top:10px}
-#rickPayModal .rp-copy{border:0;border-radius:9px;background:#1d4ed8;color:#fff;padding:9px 12px;font-weight:750}
-#rickPayModal .rp-submit{width:100%;height:49px;margin-top:16px;border:0;border-radius:13px;background:linear-gradient(135deg,#3b82f6,#1d4ed8);color:white;font-size:15px;font-weight:850}
-#rickPayModal .rp-note{font-size:12px;color:#64748b;line-height:1.6;margin-top:10px}
-#rickPayModal .rp-status{margin-top:12px;padding:12px;border-radius:12px;background:#fff7e6;color:#9a5b00;font-weight:800;display:none}
-#rickPayModal .rp-status.done{display:block;background:#eafaf0;color:#087443}
-#rickAdmin{position:fixed;inset:0;z-index:99998;background:#f4f7ff;display:none;overflow:auto;padding:18px}
-#rickAdmin.show{display:block}
-#rickAdmin .ra-wrap{max-width:850px;margin:25px auto;background:#fff;border:1px solid #dbe3f0;border-radius:20px;padding:18px}
-#rickAdmin input{width:100%;height:44px;border:1px solid #cbd5e1;border-radius:10px;padding:0 12px;margin:8px 0}
-#rickAdmin button{border:0;border-radius:10px;padding:10px 14px;background:#1d4ed8;color:white;font-weight:800;margin:4px}
-#rickAdmin .ra-order{border:1px solid #dbe3f0;border-radius:14px;padding:13px;margin:10px 0;line-height:1.7}
-#rickAdmin .ra-order small{color:#64748b}
-@media(min-width:600px){#rickPayModal{align-items:center}#rickPayModal .rp-sheet{border-radius:24px}}
+<style>
+/* RICK-GAMING manual payment + orders add-on */
+.rg-modal{position:fixed;inset:0;z-index:9999;background:rgba(8,18,40,.62);display:none;align-items:flex-end;justify-content:center;padding:14px}.rg-modal.show{display:flex}.rg-sheet{width:min(560px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;padding:20px;box-shadow:0 20px 60px #0003}.rg-sheet h2{font-size:21px;font-weight:850;margin-bottom:8px}.rg-muted{color:#64748b;font-size:13px;line-height:1.6}.rg-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}.rg-method{border:1.5px solid #dbe3ef;border-radius:15px;padding:13px;text-align:center;font-weight:800;background:#fff;color:#172554}.rg-method.active{border-color:#2563eb;background:#eff6ff}.rg-field{display:block;margin:12px 0 6px;font-size:13px;font-weight:750}.rg-input{width:100%;border:1px solid #d8e0ec;border-radius:12px;padding:13px;font:inherit;outline:none}.rg-copy{border:0;border-radius:12px;background:#eaf2ff;color:#1d4ed8;padding:10px 13px;font-weight:800}.rg-primary{width:100%;border:0;border-radius:13px;background:linear-gradient(135deg,#1687ef,#1458ce);color:#fff;padding:14px;font:inherit;font-weight:850;margin-top:12px}.rg-secondary{width:100%;border:1px solid #dbe3ef;border-radius:13px;background:#fff;color:#334155;padding:12px;font:inherit;font-weight:750;margin-top:8px}.rg-order-admin{margin-top:9px;border:0;background:#e8f7ee;color:#087443;border-radius:10px;padding:9px 12px;font-weight:800}.rg-order-admin:disabled{opacity:.5}
 </style>
-
-<!-- RICK-PAYMENT-FLOW-V1: front-end payment/order prototype -->
-<div id="rickPayModal" aria-hidden="true">
- <div class="rp-sheet">
-  <div class="rp-head"><h2>নিরাপদ পেমেন্ট</h2><button class="rp-close" id="rpClose" type="button" aria-label="বন্ধ করুন">×</button></div>
-  <div class="rp-summary" id="rpSummary">আপনার অর্ডারের তথ্য</div>
-  <label class="rp-label">পেমেন্ট মাধ্যম বেছে নিন</label>
-  <div class="rp-methods">
-   <button type="button" class="rp-method active" data-method="বিকাশ">বিকাশ</button>
-   <button type="button" class="rp-method" data-method="নগদ">নগদ</button>
-  </div>
-  <div class="rp-number"><div><small>পেমেন্ট নম্বর</small><br><strong id="rpNumber">01620576948</strong></div><button class="rp-copy" id="rpCopy" type="button">কপি করুন</button></div>
-  <label class="rp-label" for="rpPlayer">গেম UID / Player ID</label>
-  <input class="rp-input" id="rpPlayer" placeholder="আপনার গেম UID লিখুন" autocomplete="off">
-  <label class="rp-label" for="rpSender">যে নম্বর থেকে টাকা পাঠিয়েছেন</label>
-  <input class="rp-input" id="rpSender" inputmode="numeric" placeholder="01XXXXXXXXX" autocomplete="off">
-  <label class="rp-label" for="rpTrx">Transaction ID (TrxID)</label>
-  <input class="rp-input" id="rpTrx" placeholder="বিকাশ/নগদের TrxID লিখুন" autocomplete="off">
-  <button class="rp-submit" id="rpSubmit" type="button">পেমেন্ট তথ্য জমা দিন</button>
-  <div class="rp-status" id="rpStatus"></div>
-  <p class="rp-note">টাকা পাঠানোর পর সঠিক TrxID দিন। অর্ডার প্রথমে Pending থাকবে। টাকা ও UID ম্যানুয়ালি যাচাই না করে Complete দেখানো হবে না।</p>
- </div>
-</div>
-<div id="rickAdmin">
- <div class="ra-wrap">
-  <h2>অর্ডার যাচাই প্যানেল</h2>
-  <p>অ্যাডমিন কোড দিয়ে প্রবেশ করুন। TrxID ও পেমেন্ট মিলিয়ে তারপর Complete করুন।</p>
-  <div id="raLogin"><input id="raCode" placeholder="Admin verification code"><button id="raEnter" type="button">ভেরিফাই</button></div>
-  <div id="raOrders" hidden></div>
-  <button id="raExit" type="button">বন্ধ করুন</button>
-  <p><small>সতর্কতা: এটি ব্রাউজারের লোকাল ডেমো। GitHub Pages-এ একাধিক ডিভাইসের অর্ডার একসাথে দেখতে/পরিবর্তন করতে Firebase বা নিরাপদ সার্ভার দরকার।</small></p>
+<div class="rg-modal" id="rgPayModal" aria-modal="true" role="dialog">
+ <div class="rg-sheet">
+  <h2>পেমেন্ট করে অর্ডার সম্পন্ন করুন</h2><p class="rg-muted" id="rgSummary">আপনার প্যাকেজের তথ্য</p>
+  <div class="rg-methods"><button class="rg-method active" type="button" data-rg-method="bKash">বিকাশ</button><button class="rg-method" type="button" data-rg-method="Nagad">নগদ</button></div>
+  <div style="padding:14px;border-radius:15px;background:#f1f6ff"><div class="rg-muted">Send Money করুন এই নম্বরে</div><div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:5px"><b style="font-size:22px" id="rgNumber">01620576948</b><button class="rg-copy" type="button" id="rgCopy">নম্বর কপি</button></div></div>
+  <label class="rg-field" for="rgUid">Player UID</label><input class="rg-input" id="rgUid" inputmode="numeric" placeholder="গেমের Player UID">
+  <label class="rg-field" for="rgTrx">Transaction ID (TrxID)</label><input class="rg-input" id="rgTrx" placeholder="পেমেন্টের TrxID লিখুন">
+  <p class="rg-muted" style="margin-top:9px">অর্ডার জমা হলে Pending দেখাবে। টাকা না পেলে Completed করা হবে না।</p>
+  <button class="rg-primary" type="button" id="rgSubmit">অর্ডার জমা দিন</button><button class="rg-secondary" type="button" id="rgClose">বন্ধ করুন</button>
  </div>
 </div>
 <script>
 (function(){
- 'use strict';
- var PHONE='01620576948', ADMIN_CODE='DKH2LJSN8S', STORE='rick_topup_orders_v1';
- var modal=document.getElementById('rickPayModal'), admin=document.getElementById('rickAdmin');
- var method='বিকাশ', current={};
- function getOrders(){try{return JSON.parse(localStorage.getItem(STORE)||'[]')}catch(e){return []}}
- function saveOrders(a){localStorage.setItem(STORE,JSON.stringify(a))}
- function openModal(info){
-   current=info; method='বিকাশ';
-   document.querySelectorAll('.rp-method').forEach(function(b){b.classList.toggle('active',b.dataset.method===method)});
-   document.getElementById('rpSummary').innerHTML='<b>'+esc(info.pkg)+'</b><br>মূল্য: <b>৳'+esc(info.price)+'</b>';
-   document.getElementById('rpPlayer').value=info.uid||'';
-   document.getElementById('rpSender').value=''; document.getElementById('rpTrx').value='';
-   var st=document.getElementById('rpStatus');st.style.display='none';st.className='rp-status';st.textContent='';
-   modal.classList.add('show');modal.setAttribute('aria-hidden','false');
- }
- function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
- function findInfo(btn){
-   var root=btn.closest('main')||document;
-   var selected=root.querySelector('.pk.on')||document.querySelector('.pk.on');
-   var price=selected?(selected.dataset.price||''):((document.getElementById('needAmt')||{}).textContent||'');
-   var pkg=selected?(selected.dataset.name||selected.textContent.trim()):'Selected package';
-   var uidInput=root.querySelector('input[id$="Inp"],#uid')||document.querySelector('#uid,#uidInp,#wmInp,#wlInp,#luInp,#inInp');
-   return {pkg:pkg,price:String(price).replace(/[^\d.]/g,''),uid:uidInput?uidInput.value.trim():''};
- }
- document.addEventListener('click',function(e){
-   var b=e.target.closest('#buyBtn,#uidBuy,#wmBuy,#wlBuy,#luBuy,#inBuy');
-   if(!b)return;
-   e.preventDefault();e.stopPropagation();e.stopImmediatePropagation();
-   var info=findInfo(b);
-   if(!info.price||Number(info.price)<=0){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return}
-   openModal(info);
- },true);
- document.querySelectorAll('.rp-method').forEach(function(b){b.addEventListener('click',function(){method=b.dataset.method;document.querySelectorAll('.rp-method').forEach(function(x){x.classList.toggle('active',x===b)})})});
- document.getElementById('rpClose').onclick=function(){modal.classList.remove('show')};
- modal.addEventListener('click',function(e){if(e.target===modal)modal.classList.remove('show')});
- document.getElementById('rpCopy').onclick=function(){
-   var done=function(){this.textContent='কপি হয়েছে';var self=this;setTimeout(function(){self.textContent='কপি করুন'},1600)}.bind(this);
-   if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(PHONE).then(done,function(){fallbackCopy()})}else fallbackCopy();
-   function fallbackCopy(){var t=document.createElement('textarea');t.value=PHONE;document.body.appendChild(t);t.select();try{document.execCommand('copy');done()}catch(e){alert('নম্বর: '+PHONE)}t.remove()}
- };
- document.getElementById('rpSubmit').onclick=function(){
-   var uid=document.getElementById('rpPlayer').value.trim(), sender=document.getElementById('rpSender').value.trim(), trx=document.getElementById('rpTrx').value.trim();
-   if(uid.length<5){alert('সঠিক গেম UID লিখুন');return}
-   if(!/^01\d{9}$/.test(sender)){alert('সঠিক ১১ ডিজিটের মোবাইল নম্বর দিন');return}
-   if(trx.length<5){alert('সঠিক Transaction ID দিন');return}
-   var id='RT'+Date.now().toString().slice(-9);
-   var order={id:id,package:current.pkg,price:Number(current.price),uid:uid,method:method,paymentNumber:PHONE,sender:sender,trx:trx,status:'Pending',created:new Date().toLocaleString('bn-BD')};
-   var all=getOrders();all.unshift(order);saveOrders(all);
-   var st=document.getElementById('rpStatus');st.style.display='block';st.className='rp-status';st.textContent='অর্ডার জমা হয়েছে — '+id+' | Pending. টাকা যাচাইয়ের পর Complete হবে।';
-   this.disabled=true;this.textContent='জমা হয়েছে';
-   setTimeout(function(){document.getElementById('rpSubmit').disabled=false;document.getElementById('rpSubmit').textContent='পেমেন্ট তথ্য জমা দিন'},1800);
- };
- // Admin dashboard: open by adding #admin to the site URL.
- if(location.hash==='#admin')admin.classList.add('show');
- window.addEventListener('hashchange',function(){if(location.hash==='#admin')admin.classList.add('show')});
- document.getElementById('raExit').onclick=function(){admin.classList.remove('show');if(location.hash==='#admin')history.replaceState(null,'',location.pathname+location.search)};
- document.getElementById('raEnter').onclick=function(){
-   if(document.getElementById('raCode').value!==ADMIN_CODE){alert('ভুল অ্যাডমিন কোড');return}
-   document.getElementById('raLogin').hidden=true;renderAdmin();
- };
- function renderAdmin(){
-   var box=document.getElementById('raOrders'),orders=getOrders();box.hidden=false;
-   if(!orders.length){box.innerHTML='<p>এখনো কোনো অর্ডার নেই।</p>';return}
-   box.innerHTML=orders.map(function(o,i){
-    return '<article class="ra-order"><b>অর্ডার: '+esc(o.id)+'</b> — <strong>'+esc(o.status)+'</strong><br>'+
-    'প্যাকেজ: '+esc(o.package)+' | ৳'+esc(o.price)+'<br>UID: '+esc(o.uid)+'<br>পেমেন্ট: '+esc(o.method)+' | প্রেরক: '+esc(o.sender)+'<br>TrxID: <b>'+esc(o.trx)+'</b><br><small>'+esc(o.created)+'</small><br>'+
-    (o.status==='Pending'?'<button data-complete="'+i+'">টাকা যাচাই হয়েছে — Complete</button><button data-reject="'+i+'">Reject</button>':'')+'</article>';
-   }).join('');
-   box.querySelectorAll('[data-complete]').forEach(function(b){b.onclick=function(){var a=getOrders();a[+b.dataset.complete].status='Complete';a[+b.dataset.complete].updated=new Date().toLocaleString('bn-BD');saveOrders(a);renderAdmin()}});
-   box.querySelectorAll('[data-reject]').forEach(function(b){b.onclick=function(){var a=getOrders();a[+b.dataset.reject].status='Rejected';a[+b.dataset.reject].updated=new Date().toLocaleString('bn-BD');saveOrders(a);renderAdmin()}});
- }
+ const KEY='rickGamingManualOrdersV1'; let method='bKash', current=null;
+ const $=id=>document.getElementById(id);
+ function read(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
+ function save(a){localStorage.setItem(KEY,JSON.stringify(a));}
+ function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+ function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':'';el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row"><span>Player ID</span><b>${esc(o.uid)}</b></div><div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});}
+ window.renderOrders=render;
+ document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"]');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"]');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
+ document.querySelectorAll('[data-rg-method]').forEach(b=>b.addEventListener('click',()=>{method=b.dataset.rgMethod;document.querySelectorAll('[data-rg-method]').forEach(x=>x.classList.toggle('active',x===b));}));
+ $('rgCopy').onclick=()=>{const n='01620576948';if(navigator.clipboard?.writeText)navigator.clipboard.writeText(n).then(()=>$('rgCopy').textContent='কপি হয়েছে').catch(()=>alert(n));else alert(n)};
+ $('rgClose').onclick=()=>$('rgPayModal').classList.remove('show');
+ $('rgSubmit').onclick=()=>{const uid=$('rgUid').value.trim(),trx=$('rgTrx').value.trim();if(uid.length<6){alert('সঠিক Player UID দিন');return}if(trx.length<5){alert('সঠিক Transaction ID দিন');return}if(!current)return;const arr=read();const id='RG'+Date.now().toString().slice(-8);arr.push({id,package:current.package,price:current.price,uid,method,trx,status:'Pending',createdAt:new Date().toISOString()});save(arr);$('rgPayModal').classList.remove('show');render();location.hash='my-orders';alert('অর্ডার জমা হয়েছে। Status: Pending');};
+ document.addEventListener('DOMContentLoaded',render);window.addEventListener('hashchange',render);setTimeout(render,500);
 })();
 </script>
 
