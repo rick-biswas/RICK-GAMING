@@ -1574,12 +1574,24 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
 </div>
 
 <script>
-/* ===== SITE CONTROL (অ্যাডমিনের সেভ করা ছবি / দাম / সেটিংস সাইটে প্রয়োগ করে) ===== */
+/* ===== SITE CONTROL — Firebase Realtime Database দিয়ে চলে (অ্যাডমিনের ছবি / দাম / সেটিংস সাইটে প্রয়োগ করে) ===== */
 (function(){
-  var KEY='rgSiteCfgV1', API=true, DB='https://rick-biswas-80bcc-default-rtdb.firebaseio.com', OK='rickGamingManualOrdersV1';
-  var RG=window.RG={api:API,key:KEY,cfg:{},grids:{uidPkGrid:'UID Topup (BD)',inPkGrid:'Indonesia Server',pkGrid:'FF Likes',wmPkGrid:'Weekly / Monthly',wlPkGrid:'Weekly Lite',luPkGrid:'Level Up Pass'}};
+  var KEY='rgSiteCfgV1', OK='rickGamingManualOrdersV1';
+  var DB='https://rick-biswas-80bcc-default-rtdb.firebaseio.com';
+  var RG=window.RG={key:KEY,db:DB,cfg:{},grids:{uidPkGrid:'UID Topup (BD)',inPkGrid:'Indonesia Server',pkGrid:'FF Likes',wmPkGrid:'Weekly / Monthly',wlPkGrid:'Weekly Lite',luPkGrid:'Level Up Pass'}};
   try{RG.cfg=JSON.parse(localStorage.getItem(KEY)||'null')||{}}catch(e){}
   function q(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
+
+  /* Firebase REST helper: RG.fb('GET'|'PUT'|'PATCH'|'DELETE', 'path', body) */
+  RG.fb=function(method,path,body){
+    var o={method:method,cache:'no-store'};
+    if(body!==undefined){o.headers={'Content-Type':'application/json'};o.body=JSON.stringify(body)}
+    return fetch(DB+'/'+path+'.json',o).then(function(r){
+      if(!r.ok){var e=new Error(String(r.status));e.status=r.status;throw e}
+      return r.json();
+    });
+  };
+
   RG.applyImages=function(c){
     var im=(c||RG.cfg).images||{};
     q('img').forEach(function(el){
@@ -1624,48 +1636,50 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     if(s.pay){var n=document.getElementById('rgNumber');if(n)n.textContent=s.pay}
   };
   RG.applyAll=function(c,late){RG.applyImages(c);var r=RG.applyPackages(c,late);RG.applySettings(c);return r};
-  function decImg(c){
-    if(c&&c.images){var o={};Object.keys(c.images).forEach(function(k){o[k.replace(/%2E/g,'.')]=c.images[k]});c.images=o}
-    return c;
-  }
+
+  /* অ্যাডমিন সেভ করলে /site/v বদলায়; ভিজিটর শুধু তখনই পুরো কনফিগ নামায় */
   RG.pull=function(){
-    fetch(DB+'/configVer.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(v){
+    RG.fb('GET','site/v').then(function(v){
       if(v==null||(RG.cfg&&RG.cfg.v===v))return;
-      return fetch(DB+'/config.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(c){
+      return RG.fb('GET','site/cfg').then(function(c){
         if(!c||typeof c!=='object')return;
-        c=decImg(c); RG.cfg=c; var saved=true;
-        try{localStorage.setItem(KEY,JSON.stringify(c))}catch(e){saved=false}
-        if(RG.applyAll(c,saved))location.reload();
+        try{localStorage.setItem(KEY,JSON.stringify(c))}catch(e){}
+        RG.cfg=c;
+        if(RG.applyAll(c,true))location.reload();
       });
     }).catch(function(){});
   };
-  function markSent(id){
-    try{var a=JSON.parse(localStorage.getItem(OK)||'[]');a.forEach(function(o){if(o.id===id)o.sent=true});localStorage.setItem(OK,JSON.stringify(a))}catch(e){}
+
+  /* কাস্টমারের নিজের ফোনে সেভ করা অর্ডার (localStorage) ঠিকঠাক আপডেট করার হেল্পার */
+  function patchLocal(id,fn){
+    var a;try{a=JSON.parse(localStorage.getItem(OK)||'[]')}catch(e){return false}
+    var ch=false;a.forEach(function(x){if(x.id===id&&fn(x))ch=true});
+    if(ch)try{localStorage.setItem(OK,JSON.stringify(a))}catch(e){}
+    return ch;
   }
   RG.sendOrder=function(o){
-    var c={};Object.keys(o).forEach(function(k){if(k!=='sent')c[k]=o[k]});
-    fetch(DB+'/orders/'+encodeURIComponent(o.id)+'.json',{method:'PUT',body:JSON.stringify(c)})
-      .then(function(r){if(r.ok)markSent(o.id)}).catch(function(){});
+    var c={};Object.keys(o).forEach(function(k){if(k!=='synced')c[k]=o[k]});
+    RG.fb('PUT','orders/'+encodeURIComponent(o.id),c).then(function(){
+      patchLocal(o.id,function(x){if(x.synced)return false;x.synced=1;return true});
+    }).catch(function(){});
   };
-  RG.syncStatus=function(){
-    var a; try{a=JSON.parse(localStorage.getItem(OK)||'[]')}catch(e){return} if(!a.length)return;
-    Promise.all(a.map(function(o){
-      return fetch(DB+'/orders/'+encodeURIComponent(o.id)+'.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():undefined}).catch(function(){return undefined});
-    })).then(function(res){
-      var ch=false;
-      a.forEach(function(o,i){
-        var s=res[i]; if(s===undefined)return;
-        if(s===null){if(!o.sent)RG.sendOrder(o);return}
-        if(!o.sent){o.sent=true;ch=true}
-        if(s.status&&s.status!==o.status){o.status=s.status;o.updatedDate=s.updatedDate;o.updatedTime=s.updatedTime;ch=true}
-      });
-      if(ch){localStorage.setItem(OK,JSON.stringify(a));if(window.renderOrders)window.renderOrders()}
+  RG.syncStatus=function(all){
+    var a;try{a=JSON.parse(localStorage.getItem(OK)||'[]')}catch(e){return}
+    a.slice(-30).forEach(function(o){
+      if(!all&&o.synced&&o.status!=='Pending')return;
+      RG.fb('GET','orders/'+encodeURIComponent(o.id)).then(function(s){
+        if(!s){if(!o.synced)RG.sendOrder(o);return}
+        if(s.status!==o.status){
+          var ch=patchLocal(o.id,function(x){x.status=s.status;x.updatedDate=s.updatedDate;x.updatedTime=s.updatedTime;x.synced=1;return true});
+          if(ch&&window.renderOrders)window.renderOrders();
+        }else if(!o.synced)patchLocal(o.id,function(x){x.synced=1;return true});
+      }).catch(function(){});
     });
   };
   RG.applyAll(null,false);
-  document.addEventListener('DOMContentLoaded',function(){RG.applyAll(null,false);RG.pull();RG.syncStatus()});
-  window.addEventListener('hashchange',function(){RG.syncStatus()});
-  setInterval(function(){RG.pull();RG.syncStatus()},20000);
+  document.addEventListener('DOMContentLoaded',function(){RG.applyAll(null,false);RG.pull();RG.syncStatus(true)});
+  window.addEventListener('hashchange',function(){RG.syncStatus(true)});
+  setInterval(function(){RG.pull();RG.syncStatus(false)},15000);
 })();
 </script>
 
@@ -3238,117 +3252,80 @@ setInterval(fetchFreshAccountConfig, 15000);
 .ad-img{display:flex;gap:12px;align-items:center}
 .ad-img img{width:96px;height:64px;object-fit:cover;border-radius:12px;background:#eef2f8;border:1px solid #e1e8f5;flex:none}
 textarea.ad-search{resize:vertical}
+.ad-live{background:#e8f7ee;color:#087443;border-radius:12px;padding:9px 13px;font-size:12.5px;font-weight:750;margin-bottom:12px}
+.ad-pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:12px;font-size:12.5px;overflow:auto;margin:10px 0;white-space:pre}
 </style>
 <div id="adRoot" hidden></div>
 <div class="ad-toast" id="adToast"></div>
 
 <script>
 (function(){
-  var SES='rgAdminSession', TOK='rgAdminToken', PASS_KEY='rgAdminPassHashV1', ORD_KEY='rickGamingManualOrdersV1';
+  var AUTH='rgAdminAuthV2';
   var root=document.getElementById('adRoot'), toastEl=document.getElementById('adToast'), tt, pendingImg=null;
-  var S={tab:'dash',filter:'All',q:'',grid:'uidPkGrid',srv:null,setup:false,orders:[],cfg:{},pk:{},touched:{},sig:'',dirty:false};
+  var S={tab:'dash',filter:'All',q:'',grid:'uidPkGrid',first:null,orders:[],cfg:{},pk:{},touched:{},sig:'',dirty:false,err:null,busy:false};
   var IMGS=[['Main logo.jpg','সাইটের লোগো'],['Banner 1.jpg','হোম ব্যানার ১'],['Banner 2.jpg','হোম ব্যানার ২'],['Banner 3.jpg','হোম ব্যানার ৩'],['FF LIKES.jpg','FF Likes কার্ড'],['UID TOPUP (BD).jpg','UID Topup (BD) কার্ড'],['WEEKLYMONTHLY.jpg','Weekly/Monthly কার্ড'],['WEEKLY LITE.jpg','Weekly Lite কার্ড'],['LEVEL UP PASS.jpg','Level Up Pass কার্ড'],['INDONESIA SERVER.jpg','Indonesia Server কার্ড'],['uid checker.jpg','UID Checker কার্ড'],['Notification.jpg','নোটিফিকেশন ছবি'],['wallet.jpg','Wallet Pay আইকন'],['andmoney.jpg','Instant Pay আইকন']];
+  var RULES='{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}';
 
   function $(s,r){return (r||document).querySelector(s)}
   function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
-  function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toastEl.classList.remove('show')},2400)}
+  function toast(m){toastEl.textContent=m;toastEl.classList.add('show');clearTimeout(tt);tt=setTimeout(function(){toastEl.classList.remove('show')},2600)}
   function money(n){return '৳'+Number(n||0).toLocaleString('en-US',{maximumFractionDigits:2})}
   function fmt(iso){var d=new Date(iso);return isNaN(d)?'-':d.toLocaleDateString('en-GB')+' '+d.toLocaleTimeString('en-US')}
-  function tok(){return localStorage.getItem(TOK)||''}
   function hash(s){
     if(window.crypto&&crypto.subtle&&window.TextEncoder)return crypto.subtle.digest('SHA-256',new TextEncoder().encode('rg::'+s)).then(function(b){return Array.prototype.map.call(new Uint8Array(b),function(x){return ('0'+x.toString(16)).slice(-2)}).join('')});
     return Promise.resolve('x'+btoa(unescape(encodeURIComponent('rg::'+s))));
   }
   function download(name,text,type){var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:type}));a.download=name;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},500)}
   function copy(t){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('কপি হয়েছে')},function(){prompt('Copy:',t)});else prompt('Copy:',t)}
-  function authed(){return S.srv?!!tok():(!!sessionStorage.getItem(SES)&&!!localStorage.getItem(PASS_KEY))}
-
-  var DB='https://rick-biswas-80bcc-default-rtdb.firebaseio.com';
-  function fb(method,path,body){
-    return fetch(DB+path+'.json',{method:method,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'}).then(function(r){
-      return r.json().catch(function(){return null}).then(function(j){
-        if(!r.ok)throw {error:(j&&j.error)||('HTTP '+r.status),status:r.status};
-        return j;
-      });
-    });
+  function authed(){try{return !!localStorage.getItem(AUTH)}catch(e){return false}}
+  function logout(){try{localStorage.removeItem(AUTH)}catch(e){}S.first=null}
+  function enc(id){return encodeURIComponent(id)}
+  function errMsg(e){
+    var c=e&&e.status;
+    if(c===401||c===403)return 'Firebase Rules-এ অনুমতি নেই — সেটিংস ট্যাবের নির্দেশনা দেখুন';
+    return 'ডাটাবেসের সাথে সংযোগ হয়নি — ইন্টারনেট চেক করুন';
   }
-  function cfgToDb(c){var o=JSON.parse(JSON.stringify(c||{}));if(o.images){var m={};Object.keys(o.images).forEach(function(k){m[k.replace(/\./g,'%2E')]=o.images[k]});o.images=m}return o}
-  function cfgFromDb(c){c=c||{};if(c.images){var m={};Object.keys(c.images).forEach(function(k){m[k.replace(/%2E/g,'.')]=c.images[k]});c.images=m}return c}
-  function api(path,body){
-    switch(path){
-      case '/api/login':
-        return fb('GET','/admin/passHash').then(function(cur){
-          return hash(body.password).then(function(h){
-            if(cur===null)return fb('PUT','/admin/passHash',h).then(function(){return {token:h}});
-            if(cur===h)return {token:h};
-            throw {error:'ভুল পাসওয়ার্ড'};
-          });
-        });
-      case '/api/admin/orders':
-        return fb('GET','/orders').then(function(m){
-          var a=[];m=m||{};Object.keys(m).forEach(function(k){var o=m[k];if(o&&typeof o==='object'){o.id=o.id||k;a.push(o)}});
-          a.sort(function(x,y){return new Date(x.createdAt)-new Date(y.createdAt)});
-          return {orders:a};
-        });
-      case '/api/config':
-        return fb('GET','/config').then(cfgFromDb);
-      case '/api/admin/config':
-        return fb('PUT','/config',cfgToDb(body.config)).then(function(){return fb('PUT','/configVer',body.config.v)});
-      case '/api/admin/upload':
-        return Promise.resolve({url:body.data});
-      case '/api/admin/password':
-        return hash(body.password).then(function(h){return fb('PUT','/admin/passHash',h).then(function(){localStorage.setItem(TOK,h)})});
-      case '/api/admin/order':
-        if(body.del)return fb('DELETE','/orders/'+encodeURIComponent(body.id));
-        return fb('PATCH','/orders/'+encodeURIComponent(body.id),{status:body.status,updatedDate:body.d,updatedTime:body.t});
-      case '/api/admin/clear':
-        return fb('DELETE','/orders');
-    }
-    return Promise.reject({error:'unknown'});
-  }
-  /* আগে শুধু এই ব্রাউজারে জমা থাকা অর্ডারগুলো একবার Firebase-এ তুলে দেয় */
-  function migrate(cloud){
-    var m={};cloud.forEach(function(o){m[o.id]=1});
-    var miss=localOrders().filter(function(o){return o&&o.id&&!m[o.id]});
-    return Promise.all(miss.map(function(o){var c={};Object.keys(o).forEach(function(k){if(k!=='sent')c[k]=o[k]});return fb('PUT','/orders/'+encodeURIComponent(o.id),c).then(function(){cloud.push(o)}).catch(function(){})}));
-  }
-  function localOrders(){try{var a=JSON.parse(localStorage.getItem(ORD_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
-  function loadAll(){
-    if(S.srv)return fb('GET','/admin/passHash').then(function(cur){
-      if(cur!==null&&cur!==tok()){localStorage.removeItem(TOK);throw {error:'auth'}}
-      return Promise.all([api('/api/admin/orders'),api('/api/config')]);
-    }).then(function(a){var o=a[0].orders||[];return migrate(o).then(function(){o.sort(function(x,y){return new Date(x.createdAt)-new Date(y.createdAt)});S.orders=o;S.cfg=a[1]||{};S.sig=sig()})}).catch(function(e){if(e&&e.error==='auth')return;toast('Firebase: '+((e&&e.error)||'সংযোগ হয়নি'))});
-    S.orders=localOrders();try{S.cfg=JSON.parse(localStorage.getItem(RG.key)||'null')||{}}catch(e){S.cfg={}}S.sig=sig();return Promise.resolve();
+  function toArr(obj){
+    if(!obj||typeof obj!=='object')return [];
+    return Object.keys(obj).map(function(k){var o=obj[k];if(o&&typeof o==='object'){o.id=o.id||k;return o}return null}).filter(Boolean)
+      .sort(function(a,b){return new Date(a.createdAt)-new Date(b.createdAt)});
   }
   function sig(){return S.orders.length+':'+S.orders.map(function(x){return x.id+x.status}).join(',')}
+
+  function loadAll(){
+    return Promise.all([RG.fb('GET','orders'),RG.fb('GET','site/cfg'),RG.fb('GET','admin/hash')]).then(function(a){
+      if(a[2]&&a[2]!==localStorage.getItem(AUTH)){logout();toast('পাসওয়ার্ড বদলেছে — আবার লগইন করুন');return}
+      S.orders=toArr(a[0]);S.cfg=a[1]||{};S.sig=sig();S.err=null;
+    }).catch(function(e){S.err=e});
+  }
   function saveCfg(msg){
     S.cfg.v=Date.now();
-    function done(){localStorage.setItem(RG.key,JSON.stringify(S.cfg));RG.cfg=S.cfg;RG.applyAll(S.cfg,false);toast(msg||'সেভ হয়েছে ✓')}
-    if(S.srv)return api('/api/admin/config',{config:S.cfg}).then(done).catch(function(e){toast('সেভ হয়নি — '+((e&&e.error)||'আবার চেষ্টা করুন'))});
-    try{done()}catch(e){toast('জায়গা শেষ — ছোট ছবি দিন')}
-    return Promise.resolve();
+    return RG.fb('PATCH','site',{cfg:S.cfg,v:S.cfg.v}).then(function(){
+      try{localStorage.setItem(RG.key,JSON.stringify(S.cfg))}catch(e){}
+      RG.cfg=S.cfg;RG.applyAll(S.cfg,false);S.err=null;toast(msg||'সেভ হয়েছে ✓');return true;
+    }).catch(function(e){toast(errMsg(e));return false});
   }
 
   /* ---------- login ---------- */
   function loginView(){
-    var first=S.srv?S.setup:!localStorage.getItem(PASS_KEY);
+    var first=S.first;
     root.innerHTML='<div class="ad-wrap"><div class="ad-login ad-card"><div class="ad-ic" style="margin-bottom:12px">A</div>'
       +'<h2>'+(first?'অ্যাডমিন পাসওয়ার্ড সেট করুন':'অ্যাডমিন লগইন')+'</h2>'
-      +'<p class="ad-note">'+(first?'প্রথমবার — একটি পাসওয়ার্ড দিন (কমপক্ষে ৪ অক্ষর)।':'প্যানেলে ঢুকতে পাসওয়ার্ড দিন।')+'</p>'
+      +'<p class="ad-note">'+(first?'প্রথমবার — একটি পাসওয়ার্ড দিন (কমপক্ষে ৪ অক্ষর)। এটি Firebase-এ সেভ থাকবে, যেকোনো ফোন/কম্পিউটার থেকে এই পাসওয়ার্ডে ঢুকতে পারবেন।':'প্যানেলে ঢুকতে পাসওয়ার্ড দিন।')+'</p>'
       +'<input class="ad-search" id="adP1" type="password" placeholder="পাসওয়ার্ড" style="margin-top:12px">'
       +(first?'<input class="ad-search" id="adP2" type="password" placeholder="আবার লিখুন" style="margin-top:10px">':'')
       +'<button class="ad-btn pri" id="adGo" style="width:100%;margin-top:12px;padding:13px">'+(first?'সেট করুন':'লগইন')+'</button>'
       +'<button class="ad-btn gh" id="adHome" style="width:100%;margin-top:8px">← সাইটে ফিরুন</button></div></div>';
-    function enter(){loadAll().then(render)}
+    function enter(h){try{localStorage.setItem(AUTH,h)}catch(e){return toast('ব্রাউজার স্টোরেজ বন্ধ — লগইন রাখা যাচ্ছে না')}root.innerHTML='<div class="ad-wrap"><div class="ad-empty">লোড হচ্ছে…</div></div>';loadAll().then(render)}
     function go(){
       var p=$('#adP1').value;
       if(first){if(p.length<4)return toast('কমপক্ষে ৪ অক্ষর দিন');if(p!==$('#adP2').value)return toast('দুটি পাসওয়ার্ড মেলেনি')}
-      if(S.srv)return api('/api/login',{password:p}).then(function(j){localStorage.setItem(TOK,j.token);S.setup=false;enter()}).catch(function(e){toast((e&&e.error)||'লগইন হয়নি')});
       hash(p).then(function(h){
-        if(first){localStorage.setItem(PASS_KEY,h);sessionStorage.setItem(SES,'1');enter()}
-        else if(h===localStorage.getItem(PASS_KEY)){sessionStorage.setItem(SES,'1');enter()}
-        else toast('ভুল পাসওয়ার্ড');
-      });
+        return RG.fb('GET','admin/hash').then(function(cur){
+          if(!cur){return RG.fb('PUT','admin/hash',h).then(function(){enter(h)})}
+          if(cur===h)enter(h);else toast('ভুল পাসওয়ার্ড');
+        });
+      }).catch(function(e){toast(errMsg(e))});
     }
     $('#adGo').onclick=go;
     root.querySelectorAll('input').forEach(function(i){i.onkeydown=function(e){if(e.key==='Enter')go()}});
@@ -3364,7 +3341,8 @@ textarea.ad-search{resize:vertical}
     o.forEach(function(x){var t=new Date(x.createdAt);t.setHours(0,0,0,0);days.forEach(function(k){if(+k.d===+t)k.n++})});
     var mx=Math.max.apply(null,days.map(function(k){return k.n}).concat([1]));
     var uids={};o.forEach(function(x){uids[x.uid]=1});
-    var stats=[['মোট অর্ডার',o.length],['Pending',pend],['Completed',done],['Cancelled',canc],['আয় (Completed)',money(rev)],['Pending টাকা',money(pv)],['মোট কাস্টমার (UID)',Object.keys(uids).length]];
+    var today=days[6].n;
+    var stats=[['মোট অর্ডার',o.length],['আজকের অর্ডার',today],['Pending',pend],['Completed',done],['Cancelled',canc],['আয় (Completed)',money(rev)],['Pending টাকা',money(pv)],['মোট কাস্টমার (UID)',Object.keys(uids).length]];
     var latest=o.slice().reverse().slice(0,6);
     return '<div class="ad-grid">'+stats.map(function(s){return '<div class="ad-stat"><small>'+s[0]+'</small><b>'+s[1]+'</b></div>'}).join('')+'</div>'
       +'<div class="ad-card"><b>গত ৭ দিনের অর্ডার</b><div class="ad-chart">'+days.map(function(k){return '<div class="ad-bar"><span>'+k.n+'</span><i style="height:'+Math.round(k.n/mx*100)+'%"></i><span>'+names[k.d.getDay()]+'</span></div>'}).join('')+'</div></div>'
@@ -3397,22 +3375,22 @@ textarea.ad-search{resize:vertical}
   }
   function gridList(){
     var g=S.grid;
-    if(!S.pk[g])S.pk[g]=(S.cfg.packages&&S.cfg.packages[g])?JSON.parse(JSON.stringify(S.cfg.packages[g])):RG.readGrid(g);
+    if(!S.pk[g])S.pk[g]=(S.cfg.packages&&Array.isArray(S.cfg.packages[g]))?JSON.parse(JSON.stringify(S.cfg.packages[g])):RG.readGrid(g);
     return S.pk[g];
   }
   function pkView(){
     var l=gridList();
     return '<div class="ad-chips">'+Object.keys(RG.grids).map(function(g){return '<button class="ad-chip'+(S.grid===g?' on':'')+'" data-grid="'+g+'">'+RG.grids[g]+'</button>'}).join('')+'</div>'
-      +'<div class="ad-card"><b>'+RG.grids[S.grid]+' — প্যাকেজ ও দাম</b><p class="ad-note">নাম ও দাম (টাকা) বদলান, নতুন প্যাকেজ যোগ করুন বা ✕ দিয়ে মুছুন। শেষে "সেভ করুন" চাপুন।</p>'
+      +'<div class="ad-card"><b>'+RG.grids[S.grid]+' — প্যাকেজ ও দাম</b><p class="ad-note">নাম ও দাম (টাকা) বদলান, নতুন প্যাকেজ যোগ করুন বা ✕ দিয়ে মুছুন। শেষে "সেভ করুন" চাপুন — সাথে সাথে সবার ফোনে বদলে যাবে।</p>'
       +'<div class="ad-acts" style="margin:10px 0;align-items:center"><input class="ad-search" id="adPct" inputmode="decimal" placeholder="%" style="width:80px"><button class="ad-btn ok" id="adUp">% দাম বাড়ান</button><button class="ad-btn no" id="adDn">% দাম কমান</button></div>'
       +'<div class="ad-pkh"><span>প্যাকেজের নাম</span><span>দাম ৳</span><span></span></div>'
       +l.map(function(it,i){return '<div class="ad-pk"><input class="ad-search" data-pk="d" data-i="'+i+'" value="'+esc(it.d)+'"><input class="ad-search" data-pk="p" data-i="'+i+'" inputmode="decimal" value="'+esc(it.p)+'"><button class="ad-btn no" data-del="'+i+'">✕</button></div>'}).join('')
       +'<div class="ad-acts"><button class="ad-btn" id="adAdd">＋ নতুন প্যাকেজ</button><button class="ad-btn pri" id="adSavePk">সেভ করুন</button><button class="ad-btn gh" id="adResetPk">আগের ডিফল্টে ফিরুন</button></div></div>';
   }
   function imgView(){
-    var im=S.cfg.images||{};
-    return '<div class="ad-card"><b>ছবি ও লোগো</b><p class="ad-note">"বদলান" চেপে ফোন/কম্পিউটার থেকে ছবি বাছুন — ছবি নিজে থেকে ছোট হয়ে সাইটে লাইভ হবে।</p></div>'
-      +IMGS.map(function(x){var cur=im[x[0]];return '<div class="ad-card ad-img"><img src="'+esc(cur||x[0])+'" alt=""><div style="flex:1;min-width:0"><b>'+x[1]+'</b><div class="ad-acts" style="margin-top:8px"><button class="ad-btn pri" data-up="'+esc(x[0])+'">বদলান</button>'+(cur?'<button class="ad-btn gh" data-rst="'+esc(x[0])+'">রিসেট</button>':'')+'</div></div></div>'}).join('')
+    var im=S.cfg.images||{}, kb=Math.round(JSON.stringify(S.cfg).length/1024);
+    return '<div class="ad-card"><b>ছবি ও লোগো</b><p class="ad-note">"আপলোড" চেপে ফোন/কম্পিউটার থেকে ছবি বাছুন (ছবি নিজে থেকে ছোট হয়ে যাবে), অথবা "লিংক" চেপে ছবির লিংক বসান। সেভ হলেই সাইটে লাইভ।<br>বর্তমান ডেটা: '+kb+' KB'+(kb>2500?' — <b style="color:#b42318">বেশি বড় হয়ে গেছে, সাইট ধীর হতে পারে। ছবির লিংক (imgbb ইত্যাদি) ব্যবহার করুন।</b>':'')+'</p></div>'
+      +IMGS.map(function(x){var cur=im[x[0]];return '<div class="ad-card ad-img"><img src="'+esc(cur||x[0])+'" alt=""><div style="flex:1;min-width:0"><b>'+x[1]+'</b><div class="ad-acts" style="margin-top:8px"><button class="ad-btn pri" data-up="'+esc(x[0])+'">আপলোড</button><button class="ad-btn" data-url="'+esc(x[0])+'">লিংক</button>'+(cur?'<button class="ad-btn gh" data-rst="'+esc(x[0])+'">রিসেট</button>':'')+'</div></div></div>'}).join('')
       +'<input type="file" id="adImgFile" accept="image/*" hidden>';
   }
   function curSet(){
@@ -3430,21 +3408,43 @@ textarea.ad-search{resize:vertical}
       +'<button class="ad-btn pri" id="adSaveSet" style="margin-top:12px">সেভ করুন</button></div>'
       +'<div class="ad-card"><b>পাসওয়ার্ড পরিবর্তন</b><input class="ad-search" id="adNp" type="password" placeholder="নতুন পাসওয়ার্ড" style="margin-top:10px"><button class="ad-btn pri" id="adSavePass" style="margin-top:10px">পরিবর্তন করুন</button></div>'
       +'<div class="ad-card"><b>অর্ডার এক্সপোর্ট</b><div class="ad-acts"><button class="ad-btn" id="adCsv">CSV ডাউনলোড</button><button class="ad-btn" id="adJson">JSON ব্যাকআপ</button></div></div>'
+      +'<div class="ad-card"><b>Firebase Rules (একবার সেট করুন)</b><p class="ad-note">Firebase Console → Realtime Database → Rules ট্যাবে নিচের লেখা বসিয়ে Publish করুন। না করলে অর্ডার/দাম সেভ হবে না।</p><pre class="ad-pre">'+esc(RULES)+'</pre><div class="ad-acts"><button class="ad-btn" id="adCopyRules">Rules কপি করুন</button></div></div>'
       +'<div class="ad-card"><b style="color:#b42318">ডেঞ্জার জোন</b><div class="ad-acts"><button class="ad-btn no" id="adClear">সব অর্ডার মুছুন</button></div></div>';
+  }
+  function statusBar(){
+    if(S.err){
+      var c=S.err.status, perm=(c===401||c===403);
+      return '<div class="ad-card" style="background:#fff1f0;border-color:#f3b4ae"><b>🔴 '+(perm?'Firebase অনুমতি দিচ্ছে না':'ডাটাবেস সংযুক্ত হয়নি')+'</b><p class="ad-note">'
+        +(perm?'Firebase Console → Realtime Database → Rules-এ গিয়ে নিচের Rules বসিয়ে Publish করুন, তারপর "আবার চেষ্টা" চাপুন।':'ইন্টারনেট চেক করুন, তারপর আবার চেষ্টা করুন।')+'</p>'
+        +(perm?'<pre class="ad-pre">'+esc(RULES)+'</pre>':'')
+        +'<div class="ad-acts"><button class="ad-btn pri" id="adRetry">আবার চেষ্টা</button>'+(perm?'<button class="ad-btn" id="adCopyRules2">Rules কপি</button>':'')+'</div></div>';
+    }
+    return '<div class="ad-live">🟢 Firebase সংযুক্ত — সব অর্ডার ও পরিবর্তন লাইভ</div>';
   }
 
   /* ---------- render ---------- */
   function render(){
-    if(S.srv===null){root.innerHTML='<div class="ad-wrap"><div class="ad-empty">লোড হচ্ছে…</div></div>';return detect().then(render)}
-    if(!authed())return loginView();
+    if(!authed()){
+      if(S.first===null){
+        root.innerHTML='<div class="ad-wrap"><div class="ad-empty">লোড হচ্ছে…</div></div>';
+        return RG.fb('GET','admin/hash').then(function(h){S.first=!h;S.err=null;render()}).catch(function(e){
+          S.err=e;
+          root.innerHTML='<div class="ad-wrap"><div class="ad-login ad-card"><div class="ad-ic" style="margin-bottom:12px">A</div>'+statusBar()+'<button class="ad-btn gh" id="adHome" style="width:100%;margin-top:8px">← সাইটে ফিরুন</button></div></div>';
+          bindErr();$('#adHome').onclick=function(){location.hash=''};
+        });
+      }
+      return loginView();
+    }
     var o=S.orders,pend=o.filter(function(x){return x.status==='Pending'}).length;
     var tabs=[['dash','ড্যাশবোর্ড'],['orders','অর্ডার'+(pend?' ('+pend+')':'')],['cust','কাস্টমার'],['pk','দাম/প্যাকেজ'],['img','ছবি/লোগো'],['set','সেটিংস']];
     var body={dash:dashView,orders:ordersView,cust:custView}[S.tab];
     body=body?body(o):S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
     var keepQ=document.activeElement&&document.activeElement.id==='adQ';
-    root.innerHTML='<div class="ad-wrap"><div class="ad-top"><div class="ad-ic">A</div><h1>Admin Panel</h1><button class="ad-btn" id="adSite">সাইট</button><button class="ad-btn no" id="adOut">লগআউট</button></div>'
-      +(S.srv?'':'<div class="ad-card" style="background:#fff7e6;border-color:#f6d58b"><b>⚠ Firebase সংযুক্ত হয়নি</b><p class="ad-note">ইন্টারনেট দেখুন, অথবা Firebase Console → Realtime Database → Rules-এ read/write চালু করুন। ('+esc(S.err||'')+')</p></div>')
+    var st=root.scrollTop;
+    root.innerHTML='<div class="ad-wrap"><div class="ad-top"><div class="ad-ic">A</div><h1>Admin Panel</h1><button class="ad-btn" id="adRef" title="রিফ্রেশ">⟳</button><button class="ad-btn" id="adSite">সাইট</button><button class="ad-btn no" id="adOut">লগআউট</button></div>'
+      +statusBar()
       +'<div class="ad-tabs">'+tabs.map(function(t){return '<button class="ad-tab'+(S.tab===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>'+body+'</div>';
+    root.scrollTop=st;
     if(keepQ){var q=$('#adQ');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
     bind();
   }
@@ -3459,7 +3459,7 @@ textarea.ad-search{resize:vertical}
         im.onload=function(){
           var k=Math.min(1,max/Math.max(im.width,im.height)),c=document.createElement('canvas');
           c.width=Math.max(1,Math.round(im.width*k));c.height=Math.max(1,Math.round(im.height*k));
-          var x=c.getContext('2d'),png=/png|webp|svg/.test(file.type);
+          var x=c.getContext('2d'),png=/png|webp|svg|gif/.test(file.type);
           if(!png){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}
           x.drawImage(im,0,0,c.width,c.height);
           ok(png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',0.8));
@@ -3469,12 +3469,21 @@ textarea.ad-search{resize:vertical}
       r.readAsDataURL(file);
     });
   }
+  function bindErr(){
+    var r=$('#adRetry');if(r)r.onclick=function(){S.first=null;loadAll().then(render)};
+    var c=$('#adCopyRules2');if(c)c.onclick=function(){copy(RULES)};
+  }
+  function refresh(quiet){
+    return loadAll().then(function(){if(!quiet)toast(S.err?errMsg(S.err):'রিফ্রেশ হয়েছে');render()});
+  }
 
   function bind(){
     $('#adSite').onclick=function(){location.hash='';if(S.dirty)location.reload()};
-    $('#adOut').onclick=function(){sessionStorage.removeItem(SES);localStorage.removeItem(TOK);render()};
+    $('#adOut').onclick=function(){logout();render()};
+    $('#adRef').onclick=function(){refresh(false)};
+    bindErr();
     root.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){S.tab=b.dataset.tab;render();root.scrollTop=0;
-      if(S.srv&&['dash','orders','cust'].indexOf(S.tab)>-1)api('/api/admin/orders').then(function(j){S.orders=j.orders||[];var g=sig();if(g!==S.sig){S.sig=g;render()}}).catch(function(){})}});
+      if(['dash','orders','cust'].indexOf(S.tab)>-1)RG.fb('GET','orders').then(function(j){S.orders=toArr(j);var g=sig();if(g!==S.sig){S.sig=g;render()}}).catch(function(){})}});
     root.querySelectorAll('[data-filter]').forEach(function(b){b.onclick=function(){S.filter=b.dataset.filter;render()}});
     root.querySelectorAll('[data-copy]').forEach(function(b){b.onclick=function(){copy(b.dataset.copy)}});
     root.querySelectorAll('[data-act]').forEach(function(b){b.onclick=function(){act(b.dataset.act,b.dataset.id)}});
@@ -3494,21 +3503,26 @@ textarea.ad-search{resize:vertical}
       $('#adSavePk').onclick=function(){
         for(var i=0;i<l.length;i++){if(!String(l[i].d).trim())return toast('প্যাকেজের নাম ফাঁকা রাখা যাবে না')}
         S.cfg.packages=S.cfg.packages||{};Object.keys(S.touched).forEach(function(g){S.cfg.packages[g]=S.pk[g]});
-        S.dirty=true;saveCfg('দাম সেভ হয়েছে — সাইটে লাইভ ✓');
+        S.dirty=true;saveCfg('দাম সেভ হয়েছে — সাইটে লাইভ ✓').then(function(ok){if(ok){S.touched={};S.pk={};render()}});
       };
       $('#adResetPk').onclick=function(){
         if(!confirm('এই সেকশনের দাম/প্যাকেজ আগের ডিফল্টে ফিরবে। নিশ্চিত?'))return;
         if(S.cfg.packages)delete S.cfg.packages[S.grid];
-        saveCfg('ডিফল্টে ফিরেছে').then(function(){location.reload()});
+        saveCfg('ডিফল্টে ফিরেছে').then(function(ok){if(ok)location.reload()});
       };
     }
     if(S.tab==='img'){
+      function setImg(key,url){S.cfg.images=S.cfg.images||{};S.cfg.images[key]=url;return saveCfg('ছবি বদলে গেছে ✓').then(render)}
       root.querySelectorAll('[data-up]').forEach(function(b){b.onclick=function(){pendingImg=b.dataset.up;var f=$('#adImgFile');f.value='';f.click()}});
-      root.querySelectorAll('[data-rst]').forEach(function(b){b.onclick=function(){delete S.cfg.images[b.dataset.rst];saveCfg('রিসেট হয়েছে').then(render)}});
+      root.querySelectorAll('[data-url]').forEach(function(b){b.onclick=function(){
+        var u=prompt('ছবির লিংক বসান (https://...)','');if(!u)return;u=u.trim();
+        if(!/^https?:\/\//i.test(u))return toast('সঠিক লিংক দিন (https:// দিয়ে শুরু)');
+        setImg(b.dataset.url,u);
+      }});
+      root.querySelectorAll('[data-rst]').forEach(function(b){b.onclick=function(){if(S.cfg.images)delete S.cfg.images[b.dataset.rst];saveCfg('রিসেট হয়েছে').then(render)}});
       $('#adImgFile').onchange=function(e){
         var f=e.target.files[0];if(!f||!pendingImg)return;var key=pendingImg;toast('আপলোড হচ্ছে…');
-        shrink(f,key==='Main logo.jpg'?400:900).then(function(data){return S.srv?api('/api/admin/upload',{data:data}).then(function(r){return r.url}):data})
-        .then(function(url){S.cfg.images=S.cfg.images||{};S.cfg.images[key]=url;return saveCfg('ছবি বদলে গেছে ✓')}).then(render).catch(function(){toast('ছবি আপলোড হয়নি')});
+        shrink(f,key==='Main logo.jpg'?400:900).then(function(data){return setImg(key,data)}).catch(function(){toast('ছবি আপলোড হয়নি')});
       };
     }
     if(S.tab==='set'){
@@ -3518,17 +3532,17 @@ textarea.ad-search{resize:vertical}
       };
       $('#adSavePass').onclick=function(){
         var v=$('#adNp').value;if(v.length<4)return toast('কমপক্ষে ৪ অক্ষর দিন');
-        if(S.srv)return api('/api/admin/password',{password:v}).then(function(){$('#adNp').value='';toast('পাসওয়ার্ড বদলানো হয়েছে')}).catch(function(e){toast((e&&e.error)||'হয়নি')});
-        hash(v).then(function(h){localStorage.setItem(PASS_KEY,h);$('#adNp').value='';toast('পাসওয়ার্ড বদলানো হয়েছে')});
+        hash(v).then(function(h){return RG.fb('PUT','admin/hash',h).then(function(){localStorage.setItem(AUTH,h);$('#adNp').value='';toast('পাসওয়ার্ড বদলানো হয়েছে')})}).catch(function(e){toast(errMsg(e))});
       };
       $('#adCsv').onclick=function(){
         var rows=[['ID','Package','Price','PlayerUID','Method','TrxID','Status','Created']].concat(S.orders.map(function(x){return [x.id,x.package,x.price,x.uid,x.method,x.trx,x.status,x.createdAt]}));
-        download('orders-'+Date.now()+'.csv','\ufeff'+rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),'text/csv');
+        download('orders-'+Date.now()+'.csv','﻿'+rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"'}).join(',')}).join('\n'),'text/csv');
       };
       $('#adJson').onclick=function(){download('orders-backup-'+Date.now()+'.json',JSON.stringify(S.orders,null,2),'application/json')};
+      $('#adCopyRules').onclick=function(){copy(RULES)};
       $('#adClear').onclick=function(){
         if(!confirm('সব অর্ডার স্থায়ীভাবে মুছে যাবে। নিশ্চিত?'))return;
-        (S.srv?api('/api/admin/clear',{}):Promise.resolve(localStorage.setItem(ORD_KEY,'[]'))).then(function(){S.orders=[];toast('সব অর্ডার মুছে ফেলা হয়েছে');render()});
+        RG.fb('DELETE','orders').then(function(){S.orders=[];S.sig=sig();toast('সব অর্ডার মুছে ফেলা হয়েছে');render()}).catch(function(e){toast(errMsg(e))});
       };
     }
   }
@@ -3537,32 +3551,28 @@ textarea.ad-search{resize:vertical}
     var i=S.orders.findIndex(function(x){return x.id===id});if(i<0)return;
     var d=new Date(),ds=d.toLocaleDateString('en-GB'),ts=d.toLocaleTimeString('en-US');
     if(a==='del'&&!confirm('Order #'+id+' মুছে ফেলবেন?'))return;
-    function apply(){
+    var req=a==='del'?RG.fb('DELETE','orders/'+enc(id)):RG.fb('PATCH','orders/'+enc(id),{status:a,updatedDate:ds,updatedTime:ts});
+    req.then(function(){
       if(a==='del'){S.orders.splice(i,1);toast('অর্ডার মুছে গেছে')}
       else{S.orders[i].status=a;S.orders[i].updatedDate=ds;S.orders[i].updatedTime=ts;toast('Order #'+id+' → '+a)}
-      if(!S.srv)localStorage.setItem(ORD_KEY,JSON.stringify(S.orders));
       S.sig=sig();render();
-    }
-    if(S.srv)api('/api/admin/order',a==='del'?{id:id,del:true}:{id:id,status:a,d:ds,t:ts}).then(apply).catch(function(){toast('হয়নি — আবার চেষ্টা করুন')});
-    else apply();
+    }).catch(function(e){toast(errMsg(e))});
   }
 
-  function detect(){
-    return fb('GET','/admin/passHash').then(function(cur){S.srv=true;S.setup=(cur===null)}).catch(function(e){S.srv=false;S.err=(e&&e.error)||'network'});
-  }
   function sync(){
     var on=location.hash==='#admin';root.hidden=!on;document.body.style.overflow=on?'hidden':'';
     if(!on)return;
-    if(S.srv!==null&&authed())loadAll().then(render);else render();
+    if(authed()){root.innerHTML='<div class="ad-wrap"><div class="ad-empty">লোড হচ্ছে…</div></div>';loadAll().then(render)}else{S.first=null;render()}
     root.scrollTop=0;
   }
   window.addEventListener('hashchange',sync);
+  /* নতুন অর্ডার এলে নিজে থেকে দেখাবে */
   setInterval(function(){
-    if(root.hidden||S.srv!==true||!tok()||['dash','orders','cust'].indexOf(S.tab)<0)return;
+    if(root.hidden||!authed()||document.hidden||['dash','orders','cust'].indexOf(S.tab)<0)return;
     var a=document.activeElement;if(a&&a.id==='adQ')return;
     var before=S.orders.length;
-    api('/api/admin/orders').then(function(j){S.orders=j.orders||[];var s=sig();if(s!==S.sig){S.sig=s;if(S.orders.length>before)toast('🔔 নতুন অর্ডার এসেছে!');render()}}).catch(function(){});
-  },12000);
+    RG.fb('GET','orders').then(function(j){S.orders=toArr(j);S.err=null;var s=sig();if(s!==S.sig){S.sig=s;if(S.orders.length>before){toast('🔔 নতুন অর্ডার এসেছে!');try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}render()}}).catch(function(){});
+  },10000);
 
   /* সাইটের নাম/লিংক/নোটিফিকেশন: account.js রিফ্রেশের পরেও অ্যাডমিনের সেটিংস বহাল থাকবে */
   if(typeof window.syncAccountLinks==='function'){
