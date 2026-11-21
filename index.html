@@ -1576,7 +1576,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
 <script>
 /* ===== SITE CONTROL (অ্যাডমিনের সেভ করা ছবি / দাম / সেটিংস সাইটে প্রয়োগ করে) ===== */
 (function(){
-  var KEY='rgSiteCfgV1', API=location.protocol.indexOf('http')===0, OK='rickGamingManualOrdersV1';
+  var KEY='rgSiteCfgV1', API=true, DB='https://rick-biswas-80bcc-default-rtdb.firebaseio.com', OK='rickGamingManualOrdersV1';
   var RG=window.RG={api:API,key:KEY,cfg:{},grids:{uidPkGrid:'UID Topup (BD)',inPkGrid:'Indonesia Server',pkGrid:'FF Likes',wmPkGrid:'Weekly / Monthly',wlPkGrid:'Weekly Lite',luPkGrid:'Level Up Pass'}};
   try{RG.cfg=JSON.parse(localStorage.getItem(KEY)||'null')||{}}catch(e){}
   function q(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
@@ -1624,27 +1624,43 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     if(s.pay){var n=document.getElementById('rgNumber');if(n)n.textContent=s.pay}
   };
   RG.applyAll=function(c,late){RG.applyImages(c);var r=RG.applyPackages(c,late);RG.applySettings(c);return r};
+  function decImg(c){
+    if(c&&c.images){var o={};Object.keys(c.images).forEach(function(k){o[k.replace(/%2E/g,'.')]=c.images[k]});c.images=o}
+    return c;
+  }
   RG.pull=function(){
-    if(!API)return;
-    fetch('/api/config',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(c){
-      if(!c||typeof c!=='object'||c.error)return;
-      var nw=JSON.stringify(c); if(localStorage.getItem(KEY)===nw)return;
-      localStorage.setItem(KEY,nw); RG.cfg=c;
-      if(RG.applyAll(c,true))location.reload();
+    fetch(DB+'/configVer.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(v){
+      if(v==null||(RG.cfg&&RG.cfg.v===v))return;
+      return fetch(DB+'/config.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(c){
+        if(!c||typeof c!=='object')return;
+        c=decImg(c); RG.cfg=c; var saved=true;
+        try{localStorage.setItem(KEY,JSON.stringify(c))}catch(e){saved=false}
+        if(RG.applyAll(c,saved))location.reload();
+      });
     }).catch(function(){});
   };
+  function markSent(id){
+    try{var a=JSON.parse(localStorage.getItem(OK)||'[]');a.forEach(function(o){if(o.id===id)o.sent=true});localStorage.setItem(OK,JSON.stringify(a))}catch(e){}
+  }
   RG.sendOrder=function(o){
-    if(!API)return;
-    fetch('/api/order',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(o)}).catch(function(){});
+    var c={};Object.keys(o).forEach(function(k){if(k!=='sent')c[k]=o[k]});
+    fetch(DB+'/orders/'+encodeURIComponent(o.id)+'.json',{method:'PUT',body:JSON.stringify(c)})
+      .then(function(r){if(r.ok)markSent(o.id)}).catch(function(){});
   };
   RG.syncStatus=function(){
-    if(!API)return; var a; try{a=JSON.parse(localStorage.getItem(OK)||'[]')}catch(e){return} if(!a.length)return;
-    fetch('/api/status',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:a.map(function(o){return o.id})})})
-    .then(function(r){return r.ok?r.json():null}).then(function(m){
-      if(!m)return; var ch=false;
-      a.forEach(function(o){var s=m[o.id]; if(!s){RG.sendOrder(o);return} if(s.status!==o.status){o.status=s.status;o.updatedDate=s.d;o.updatedTime=s.t;ch=true}});
+    var a; try{a=JSON.parse(localStorage.getItem(OK)||'[]')}catch(e){return} if(!a.length)return;
+    Promise.all(a.map(function(o){
+      return fetch(DB+'/orders/'+encodeURIComponent(o.id)+'.json',{cache:'no-store'}).then(function(r){return r.ok?r.json():undefined}).catch(function(){return undefined});
+    })).then(function(res){
+      var ch=false;
+      a.forEach(function(o,i){
+        var s=res[i]; if(s===undefined)return;
+        if(s===null){if(!o.sent)RG.sendOrder(o);return}
+        if(!o.sent){o.sent=true;ch=true}
+        if(s.status&&s.status!==o.status){o.status=s.status;o.updatedDate=s.updatedDate;o.updatedTime=s.updatedTime;ch=true}
+      });
       if(ch){localStorage.setItem(OK,JSON.stringify(a));if(window.renderOrders)window.renderOrders()}
-    }).catch(function(){});
+    });
   };
   RG.applyAll(null,false);
   document.addEventListener('DOMContentLoaded',function(){RG.applyAll(null,false);RG.pull();RG.syncStatus()});
@@ -3247,25 +3263,68 @@ textarea.ad-search{resize:vertical}
   function copy(t){if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(t).then(function(){toast('কপি হয়েছে')},function(){prompt('Copy:',t)});else prompt('Copy:',t)}
   function authed(){return S.srv?!!tok():(!!sessionStorage.getItem(SES)&&!!localStorage.getItem(PASS_KEY))}
 
-  function api(path,body){
-    var h={'Content-Type':'application/json'}; if(tok())h.Authorization='Bearer '+tok();
-    return fetch(path,{method:body?'POST':'GET',headers:h,body:body?JSON.stringify(body):undefined,cache:'no-store'}).then(function(r){
-      return r.json().catch(function(){return {}}).then(function(j){
-        if(r.status===401&&path.indexOf('/api/login')<0){localStorage.removeItem(TOK);render();throw j}
-        if(!r.ok)throw j; return j;
+  var DB='https://rick-biswas-80bcc-default-rtdb.firebaseio.com';
+  function fb(method,path,body){
+    return fetch(DB+path+'.json',{method:method,body:body===undefined?undefined:JSON.stringify(body),cache:'no-store'}).then(function(r){
+      return r.json().catch(function(){return null}).then(function(j){
+        if(!r.ok)throw {error:(j&&j.error)||('HTTP '+r.status),status:r.status};
+        return j;
       });
     });
   }
+  function cfgToDb(c){var o=JSON.parse(JSON.stringify(c||{}));if(o.images){var m={};Object.keys(o.images).forEach(function(k){m[k.replace(/\./g,'%2E')]=o.images[k]});o.images=m}return o}
+  function cfgFromDb(c){c=c||{};if(c.images){var m={};Object.keys(c.images).forEach(function(k){m[k.replace(/%2E/g,'.')]=c.images[k]});c.images=m}return c}
+  function api(path,body){
+    switch(path){
+      case '/api/login':
+        return fb('GET','/admin/passHash').then(function(cur){
+          return hash(body.password).then(function(h){
+            if(cur===null)return fb('PUT','/admin/passHash',h).then(function(){return {token:h}});
+            if(cur===h)return {token:h};
+            throw {error:'ভুল পাসওয়ার্ড'};
+          });
+        });
+      case '/api/admin/orders':
+        return fb('GET','/orders').then(function(m){
+          var a=[];m=m||{};Object.keys(m).forEach(function(k){var o=m[k];if(o&&typeof o==='object'){o.id=o.id||k;a.push(o)}});
+          a.sort(function(x,y){return new Date(x.createdAt)-new Date(y.createdAt)});
+          return {orders:a};
+        });
+      case '/api/config':
+        return fb('GET','/config').then(cfgFromDb);
+      case '/api/admin/config':
+        return fb('PUT','/config',cfgToDb(body.config)).then(function(){return fb('PUT','/configVer',body.config.v)});
+      case '/api/admin/upload':
+        return Promise.resolve({url:body.data});
+      case '/api/admin/password':
+        return hash(body.password).then(function(h){return fb('PUT','/admin/passHash',h).then(function(){localStorage.setItem(TOK,h)})});
+      case '/api/admin/order':
+        if(body.del)return fb('DELETE','/orders/'+encodeURIComponent(body.id));
+        return fb('PATCH','/orders/'+encodeURIComponent(body.id),{status:body.status,updatedDate:body.d,updatedTime:body.t});
+      case '/api/admin/clear':
+        return fb('DELETE','/orders');
+    }
+    return Promise.reject({error:'unknown'});
+  }
+  /* আগে শুধু এই ব্রাউজারে জমা থাকা অর্ডারগুলো একবার Firebase-এ তুলে দেয় */
+  function migrate(cloud){
+    var m={};cloud.forEach(function(o){m[o.id]=1});
+    var miss=localOrders().filter(function(o){return o&&o.id&&!m[o.id]});
+    return Promise.all(miss.map(function(o){var c={};Object.keys(o).forEach(function(k){if(k!=='sent')c[k]=o[k]});return fb('PUT','/orders/'+encodeURIComponent(o.id),c).then(function(){cloud.push(o)}).catch(function(){})}));
+  }
   function localOrders(){try{var a=JSON.parse(localStorage.getItem(ORD_KEY)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
   function loadAll(){
-    if(S.srv)return Promise.all([api('/api/admin/orders'),fetch('/api/config',{cache:'no-store'}).then(function(r){return r.json()})]).then(function(a){S.orders=a[0].orders||[];S.cfg=a[1]||{};S.sig=sig()});
+    if(S.srv)return fb('GET','/admin/passHash').then(function(cur){
+      if(cur!==null&&cur!==tok()){localStorage.removeItem(TOK);throw {error:'auth'}}
+      return Promise.all([api('/api/admin/orders'),api('/api/config')]);
+    }).then(function(a){var o=a[0].orders||[];return migrate(o).then(function(){o.sort(function(x,y){return new Date(x.createdAt)-new Date(y.createdAt)});S.orders=o;S.cfg=a[1]||{};S.sig=sig()})}).catch(function(e){if(e&&e.error==='auth')return;toast('Firebase: '+((e&&e.error)||'সংযোগ হয়নি'))});
     S.orders=localOrders();try{S.cfg=JSON.parse(localStorage.getItem(RG.key)||'null')||{}}catch(e){S.cfg={}}S.sig=sig();return Promise.resolve();
   }
   function sig(){return S.orders.length+':'+S.orders.map(function(x){return x.id+x.status}).join(',')}
   function saveCfg(msg){
     S.cfg.v=Date.now();
     function done(){localStorage.setItem(RG.key,JSON.stringify(S.cfg));RG.cfg=S.cfg;RG.applyAll(S.cfg,false);toast(msg||'সেভ হয়েছে ✓')}
-    if(S.srv)return api('/api/admin/config',{config:S.cfg}).then(done).catch(function(){toast('সেভ হয়নি — আবার চেষ্টা করুন')});
+    if(S.srv)return api('/api/admin/config',{config:S.cfg}).then(done).catch(function(e){toast('সেভ হয়নি — '+((e&&e.error)||'আবার চেষ্টা করুন'))});
     try{done()}catch(e){toast('জায়গা শেষ — ছোট ছবি দিন')}
     return Promise.resolve();
   }
@@ -3384,7 +3443,7 @@ textarea.ad-search{resize:vertical}
     body=body?body(o):S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
     var keepQ=document.activeElement&&document.activeElement.id==='adQ';
     root.innerHTML='<div class="ad-wrap"><div class="ad-top"><div class="ad-ic">A</div><h1>Admin Panel</h1><button class="ad-btn" id="adSite">সাইট</button><button class="ad-btn no" id="adOut">লগআউট</button></div>'
-      +(S.srv?'':'<div class="ad-card" style="background:#fff7e6;border-color:#f6d58b"><b>⚠ সার্ভার সংযুক্ত নেই</b><p class="ad-note">সাইটটি server.js দিয়ে চালালে তবেই সব কাস্টমারের অর্ডার দেখা যাবে এবং ছবি/দাম সবার ফোনে বদলাবে। এখন পরিবর্তন শুধু এই ব্রাউজারে থাকবে।</p></div>')
+      +(S.srv?'':'<div class="ad-card" style="background:#fff7e6;border-color:#f6d58b"><b>⚠ Firebase সংযুক্ত হয়নি</b><p class="ad-note">ইন্টারনেট দেখুন, অথবা Firebase Console → Realtime Database → Rules-এ read/write চালু করুন। ('+esc(S.err||'')+')</p></div>')
       +'<div class="ad-tabs">'+tabs.map(function(t){return '<button class="ad-tab'+(S.tab===t[0]?' on':'')+'" data-tab="'+t[0]+'">'+t[1]+'</button>'}).join('')+'</div>'+body+'</div>';
     if(keepQ){var q=$('#adQ');q.focus();q.setSelectionRange(q.value.length,q.value.length)}
     bind();
@@ -3403,7 +3462,7 @@ textarea.ad-search{resize:vertical}
           var x=c.getContext('2d'),png=/png|webp|svg/.test(file.type);
           if(!png){x.fillStyle='#fff';x.fillRect(0,0,c.width,c.height)}
           x.drawImage(im,0,0,c.width,c.height);
-          ok(png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',0.86));
+          ok(png?c.toDataURL('image/png'):c.toDataURL('image/jpeg',0.8));
         };
         im.src=r.result;
       };
@@ -3448,7 +3507,7 @@ textarea.ad-search{resize:vertical}
       root.querySelectorAll('[data-rst]').forEach(function(b){b.onclick=function(){delete S.cfg.images[b.dataset.rst];saveCfg('রিসেট হয়েছে').then(render)}});
       $('#adImgFile').onchange=function(e){
         var f=e.target.files[0];if(!f||!pendingImg)return;var key=pendingImg;toast('আপলোড হচ্ছে…');
-        shrink(f,key==='Main logo.jpg'?600:1400).then(function(data){return S.srv?api('/api/admin/upload',{data:data}).then(function(r){return r.url}):data})
+        shrink(f,key==='Main logo.jpg'?400:900).then(function(data){return S.srv?api('/api/admin/upload',{data:data}).then(function(r){return r.url}):data})
         .then(function(url){S.cfg.images=S.cfg.images||{};S.cfg.images[key]=url;return saveCfg('ছবি বদলে গেছে ✓')}).then(render).catch(function(){toast('ছবি আপলোড হয়নি')});
       };
     }
@@ -3489,8 +3548,7 @@ textarea.ad-search{resize:vertical}
   }
 
   function detect(){
-    if(location.protocol.indexOf('http')!==0){S.srv=false;return Promise.resolve()}
-    return fetch('/api/ping',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){S.srv=!!(j&&j.ok);S.setup=!!(j&&j.setup)}).catch(function(){S.srv=false});
+    return fb('GET','/admin/passHash').then(function(cur){S.srv=true;S.setup=(cur===null)}).catch(function(e){S.srv=false;S.err=(e&&e.error)||'network'});
   }
   function sync(){
     var on=location.hash==='#admin';root.hidden=!on;document.body.style.overflow=on?'hidden':'';
@@ -3513,3 +3571,7 @@ textarea.ad-search{resize:vertical}
   }
   sync();
 })();
+</script>
+
+</body>
+</html>
