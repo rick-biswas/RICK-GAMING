@@ -3341,7 +3341,7 @@ setInterval(fetchFreshAccountConfig, 15000);
    if(window.RG&&RG.fb)RG.fb('PATCH','orders/'+encodeURIComponent(id),{name:n}).catch(()=>{});
   });
  }
- function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!o.fields&&(!tried[o.id]||pending[o.uid]))?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>${o.fields&&o.fields[0]?esc(o.fields[0].l):'Player ID'}</span><b class="pid">${o.fields&&o.fields[0]&&o.fields[0].t==='password'?'••••••':esc(o.uid)}</b><b class="pnm">${nm}</b></div>${(o.fields||[]).slice(1).map(f=>`<div class="or-row"><span>${esc(f.l)}</span><b>${f.t==='password'?'••••••':esc(f.v||'-')}</b></div>`).join('')}<div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>${o.note?`<div class="or-note"><b>RICK-GAMING TOP UP-এ আপনাকে স্বাগতম!</b><p>${esc(o.note)}</p></div>`:''}`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!o.fields&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
+ function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!o.fields&&(!tried[o.id]||pending[o.uid]))?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>${o.fields&&o.fields[0]?esc(o.fields[0].l):'Player ID'}</span><b class="pid">${o.fields&&o.fields[0]&&o.fields[0].t==='password'?'••••••':esc(o.uid)}</b><b class="pnm">${nm}</b></div>${(o.fields||[]).slice(1).map(f=>`<div class="or-row"><span>${esc(f.l)}</span><b>${f.t==='password'?'••••••':esc(f.v||'-')}</b></div>`).join('')}<div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>${o.note?`<div class="or-note"><b>💬 RICK-GAMING TOP UP-MY ORDERS এ আপনাকে স্বাগতম !</b><p>${esc(o.note)}</p></div>`:''}`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!o.fields&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
  window.renderOrders=render;
  window.rgOpenPay=function(o){current={package:o.package,price:o.price,viewId:'cxView',fields:o.fields,uid:o.uid};$('rgSummary').textContent=o.package+' — ৳'+o.price;$('rgUid').style.display='none';var lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='none';$('rgTrx').value='';$('rgPayModal').classList.add('show');};
  document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"],#buyBtn');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"],#uid');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgUid').style.display='';{const lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='';}$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
@@ -3475,7 +3475,7 @@ setInterval(fetchFreshAccountConfig, 15000);
 .ad-row{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px dashed #e8edf6;font-size:13.5px}
 .ad-row span{color:#64748b}
 .ad-row b{text-align:right;word-break:break-all}
-.ad-row.ad-pl{align-items:center}.ad-row.ad-pl .ad-pn{flex:1;text-align:center;color:#067647;font-weight:800;word-break:break-word}.ad-row.ad-pl .ad-pn:empty{display:none}
+.ad-row.ad-pid .ad-pnm{flex:1;text-align:center;color:#2563eb;font-weight:800;word-break:break-word}.ad-row.ad-pid .ad-pnm:empty{display:none}
 .ad-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .ad-field{display:block;margin:12px 0 6px;font-size:13px;font-weight:750}
 .ad-empty{text-align:center;color:#64748b;padding:34px 10px}
@@ -3545,7 +3545,7 @@ select.ad-search{appearance:auto}
     return Object.keys(obj).map(function(k){var o=obj[k];if(o&&typeof o==='object'){o.id=o.id||k;return o}return null}).filter(Boolean)
       .sort(function(a,b){return new Date(a.createdAt)-new Date(b.createdAt)});
   }
-  function sig(){return S.orders.length+':'+S.orders.map(function(x){return x.id+x.status+(x.note||'')}).join(',')}
+  function sig(){return S.orders.length+':'+S.orders.map(function(x){return x.id+x.status+(x.note||'')+(x.name||'')}).join(',')}
 
   function loadAll(){
     return Promise.all([RG.fb('GET','orders'),RG.fb('GET','site/cfg'),RG.fb('GET','admin/hash')]).then(function(a){
@@ -3603,35 +3603,43 @@ select.ad-search{appearance:auto}
       +'<div class="ad-card"><b>গত ৭ দিনের অর্ডার</b><div class="ad-chart">'+days.map(function(k){return '<div class="ad-bar"><span>'+k.n+'</span><i style="height:'+Math.round(k.n/mx*100)+'%"></i><span>'+names[k.d.getDay()]+'</span></div>'}).join('')+'</div></div>'
       +'<div class="ad-card"><b>সাম্প্রতিক অর্ডার</b>'+(latest.length?latest.map(function(x){return '<div class="ad-row"><span>#'+esc(x.id)+' · '+esc(x.package)+'</span><b>'+money(x.price)+' · '+esc(x.status)+'</b></div>'}).join(''):'<div class="ad-empty">এখনো কোনো অর্ডার নেই</div>')+'</div>';
   }
-  /* প্লেয়ারের গেম-নাম (UID থেকে) */
-  var NMK='rg_adm_nm',NM={},NMT={};try{NM=JSON.parse(localStorage.getItem(NMK)||'{}')||{}}catch(e){}
-  function nameFor(x){return String(x.name||NM[x.uid]||'').trim()}
-  function fetchNames(list){
-    list.slice(0,20).forEach(function(x){
-      var u=x&&x.uid; if(!u||x.fields||nameFor(x)||NMT[u]||!/^\d{6,}$/.test(String(u)))return;
-      NMT[u]=1;
-      var ctrl=typeof AbortController!=='undefined'?new AbortController():null,to=setTimeout(function(){if(ctrl)ctrl.abort()},45000);
-      fetch('https://auraffxserverinfocheckerapi.onrender.com/api/player?uid='+encodeURIComponent(u),{cache:'no-store',signal:ctrl?ctrl.signal:undefined})
+  /* প্লেয়ারের গেম নাম (UID অনুযায়ী) — অ্যাডমিন প্যানেলে UID এর পাশে দেখাবে */
+  var NMK='rgNameCacheV1',NMP={},NMF={};
+  function nmCache(){try{return JSON.parse(localStorage.getItem(NMK)||'{}')}catch(e){return {}}}
+  function nmFor(x){return (x&&(x.name||nmCache()[x.uid]))||''}
+  function nmShow(id,n){root.querySelectorAll('[data-nm]').forEach(function(e){if(e.getAttribute('data-nm')===String(id))e.textContent=n})}
+  function fillNames(){
+    if(S.tab!=='orders')return;
+    S.orders.slice(-40).forEach(function(x){
+      var uid=String(x.uid||'');
+      if(x.fields||!/^\d{6,}$/.test(uid))return;
+      var c=nmFor(x);
+      if(c){if(!x.name){x.name=c;RG.fb('PATCH','orders/'+encodeURIComponent(x.id),{name:c}).catch(function(){})}return}
+      if(NMP[uid]||(NMF[uid]&&Date.now()-NMF[uid]<60000))return;
+      NMP[uid]=1;
+      var ctrl=typeof AbortController!=='undefined'?new AbortController():null,to=setTimeout(function(){if(ctrl)ctrl.abort()},60000);
+      fetch('https://auraffxserverinfocheckerapi.onrender.com/api/player?uid='+encodeURIComponent(uid),{cache:'no-store',signal:ctrl?ctrl.signal:undefined})
         .then(function(r){if(!r.ok)throw 0;return r.json()})
-        .then(function(d){var n=d&&(d.name||(d.player&&d.player.name)||(d.raw&&d.raw.name))||'';n=String(n).trim();if(!n||n==='None'||n==='null')n='';
-          if(n){NM[u]=n;try{localStorage.setItem(NMK,JSON.stringify(NM))}catch(e){}
-            S.orders.forEach(function(y){if(y.uid===u&&!y.name){y.name=n;RG.fb('PATCH','orders/'+encodeURIComponent(y.id),{name:n}).catch(function(){})}});}
-          return n})
-        .catch(function(){return ''})
-        .then(function(n){clearTimeout(to);NMT[u]=2;if(n&&!root.hidden&&S.tab==='orders'){var a=document.activeElement;if(!(a&&(a.id==='adQ'||(a.dataset&&a.dataset.note!==undefined))))render()}});
+        .then(function(d){
+          var n=d&&(d.name||(d.player&&d.player.name)||(d.raw&&d.raw.name))||'';n=String(n).trim();
+          if(!n||n==='None'||n==='null'){NMF[uid]=Date.now();return}
+          var k=nmCache();k[uid]=n;try{localStorage.setItem(NMK,JSON.stringify(k))}catch(e){}
+          S.orders.forEach(function(o){if(String(o.uid)===uid&&!o.name){o.name=n;RG.fb('PATCH','orders/'+encodeURIComponent(o.id),{name:n}).catch(function(){});nmShow(o.id,n)}});
+        })
+        .catch(function(){NMF[uid]=Date.now()})
+        .then(function(){clearTimeout(to);delete NMP[uid]});
     });
   }
   function ordersView(o){
     var q=S.q.trim().toLowerCase();
     var list=o.slice().reverse().filter(function(x){if(S.filter!=='All'&&x.status!==S.filter)return false;return !q||[x.id,x.uid,x.trx,x.package,x.method].join(' ').toLowerCase().indexOf(q)>-1});
     var counts={All:o.length};o.forEach(function(x){counts[x.status]=(counts[x.status]||0)+1});
-    fetchNames(list);
     return '<input class="ad-search" id="adQ" placeholder="অর্ডার ID / UID / TrxID / প্যাকেজ খুঁজুন" value="'+esc(S.q)+'">'
       +'<div class="ad-chips">'+['All','Pending','Completed','Cancelled'].map(function(f){return '<button class="ad-chip'+(S.filter===f?' on':'')+'" data-filter="'+f+'">'+f+' ('+(counts[f]||0)+')</button>'}).join('')+'</div>'
       +(list.length?list.map(function(x){
         return '<div class="ad-card"><div class="ad-ord-h"><b>Order #'+esc(x.id)+'</b><span class="ad-st '+esc(x.status)+'">'+esc(x.status)+'</span></div>'
         +'<div class="ad-row"><span>Package</span><b>'+esc(x.package)+'</b></div><div class="ad-row"><span>Price</span><b>'+money(x.price)+'</b></div>'
-        +(x.fields&&x.fields.length?x.fields.map(function(f){return '<div class="ad-row"><span>'+esc(f.l)+'</span><b data-copy="'+esc(f.v)+'" style="cursor:pointer">'+esc(f.v||'-')+'</b></div>'}).join(''):'<div class="ad-row ad-pl"><span>Player UID</span><b class="ad-pn">'+(nameFor(x)?esc(nameFor(x)):(NMT[x.uid]===1?'…':''))+'</b><b data-copy="'+esc(x.uid)+'" style="cursor:pointer">'+esc(x.uid)+'</b></div>')+'<div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
+        +(x.fields&&x.fields.length?x.fields.map(function(f){return '<div class="ad-row"><span>'+esc(f.l)+'</span><b data-copy="'+esc(f.v)+'" style="cursor:pointer">'+esc(f.v||'-')+'</b></div>'}).join(''):'<div class="ad-row ad-pid"><span>Player UID</span><b class="ad-pnm" data-nm="'+esc(x.id)+'">'+esc(nmFor(x))+'</b><b data-copy="'+esc(x.uid)+'" style="cursor:pointer">'+esc(x.uid)+'</b></div>')+'<div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
         +'<div class="ad-row"><span>তারিখ</span><b>'+fmt(x.createdAt)+'</b></div><div class="ad-note"><label class="ad-field" style="display:block;margin:12px 0 6px;font-weight:800;font-size:13px">💬 কাস্টমারকে মেসেজ / কারণ (অর্ডার পেজে দেখাবে)</label><textarea class="ad-search" rows="2" data-note="'+esc(x.id)+'" placeholder="যেমন: টাকা পাইনি / ভুল UID / পরে চেষ্টা করুন…">'+esc(S.draft&&S.draft[x.id]!==undefined?S.draft[x.id]:(x.note||''))+'</textarea><button class="ad-btn pri" style="margin-top:8px" data-notesave="'+esc(x.id)+'">💾 মেসেজ সেভ</button></div><div class="ad-acts">'
         +(x.status!=='Completed'?'<button class="ad-btn ok" data-act="Completed" data-id="'+esc(x.id)+'">✓ Complete</button>':'')
         +(x.status!=='Cancelled'?'<button class="ad-btn no" data-act="Cancelled" data-id="'+esc(x.id)+'">✕ Cancel</button>':'')
@@ -3888,6 +3896,7 @@ select.ad-search{appearance:auto}
     $('#adOut').onclick=function(){logout();render()};
     $('#adRef').onclick=function(){refresh(false)};
     bindErr();
+    try{fillNames()}catch(e){}
     root.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){S.tab=b.dataset.tab;render();root.scrollTop=0;
       if(['dash','orders','cust'].indexOf(S.tab)>-1)RG.fb('GET','orders').then(function(j){S.orders=toArr(j);var g=sig();if(g!==S.sig){S.sig=g;render()}}).catch(function(){})}});
     root.querySelectorAll('[data-filter]').forEach(function(b){b.onclick=function(){S.filter=b.dataset.filter;render()}});
