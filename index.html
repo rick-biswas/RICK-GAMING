@@ -656,6 +656,9 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
 .or-list{display:grid;gap:14px;margin-top:16px}
 .or-card{border-radius:22px;background:#fff;border:1px solid var(--bd);box-shadow:0 8px 22px -14px rgba(20,40,90,.3);padding:16px 16px 14px}
 .or-hd{display:flex;align-items:center;gap:12px}
+.or-note{margin-top:12px;padding:11px 13px;border-radius:14px;background:#fff4dc;border:1px solid #fde3a7;color:#7a4a00}
+.or-note b{display:block;font-size:12px;font-weight:800;margin-bottom:4px;color:#b45309}
+.or-note p{margin:0;font-size:14px;line-height:1.5;font-weight:600;white-space:pre-wrap;word-break:break-word}
 .or-ico{width:42px;height:42px;border-radius:14px;background:#e8f0ff;color:var(--v);display:grid;place-items:center;font-size:21px;flex-shrink:0}
 .or-id{flex:1;min-width:0;font-size:17px;font-weight:800;letter-spacing:-.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .or-st{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:99px;font-size:13px;font-weight:700;flex-shrink:0;background:#e3f9ec;color:#067647}
@@ -1801,8 +1804,8 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
       if(!all&&o.synced&&o.status!=='Pending')return;
       RG.fb('GET','orders/'+encodeURIComponent(o.id)).then(function(s){
         if(!s){if(!o.synced)RG.sendOrder(o);return}
-        if(s.status!==o.status){
-          var ch=patchLocal(o.id,function(x){x.status=s.status;x.updatedDate=s.updatedDate;x.updatedTime=s.updatedTime;x.synced=1;return true});
+        if(s.status!==o.status||(s.note||'')!==(o.note||'')){
+          var ch=patchLocal(o.id,function(x){x.status=s.status;x.updatedDate=s.updatedDate;x.updatedTime=s.updatedTime;if(s.note)x.note=s.note;else delete x.note;x.synced=1;return true});
           if(ch&&window.renderOrders)window.renderOrders();
         }else if(!o.synced)patchLocal(o.id,function(x){x.synced=1;return true});
       }).catch(function(){});
@@ -3338,7 +3341,7 @@ setInterval(fetchFreshAccountConfig, 15000);
    if(window.RG&&RG.fb)RG.fb('PATCH','orders/'+encodeURIComponent(id),{name:n}).catch(()=>{});
   });
  }
- function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!o.fields&&(!tried[o.id]||pending[o.uid]))?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>${o.fields&&o.fields[0]?esc(o.fields[0].l):'Player ID'}</span><b class="pid">${o.fields&&o.fields[0]&&o.fields[0].t==='password'?'••••••':esc(o.uid)}</b><b class="pnm">${nm}</b></div>${(o.fields||[]).slice(1).map(f=>`<div class="or-row"><span>${esc(f.l)}</span><b>${f.t==='password'?'••••••':esc(f.v||'-')}</b></div>`).join('')}<div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!o.fields&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
+ function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!o.fields&&(!tried[o.id]||pending[o.uid]))?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>${o.fields&&o.fields[0]?esc(o.fields[0].l):'Player ID'}</span><b class="pid">${o.fields&&o.fields[0]&&o.fields[0].t==='password'?'••••••':esc(o.uid)}</b><b class="pnm">${nm}</b></div>${(o.fields||[]).slice(1).map(f=>`<div class="or-row"><span>${esc(f.l)}</span><b>${f.t==='password'?'••••••':esc(f.v||'-')}</b></div>`).join('')}<div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>${o.note?`<div class="or-note"><b>💬 এডমিনের মেসেজ</b><p>${esc(o.note)}</p></div>`:''}`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!o.fields&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
  window.renderOrders=render;
  window.rgOpenPay=function(o){current={package:o.package,price:o.price,viewId:'cxView',fields:o.fields,uid:o.uid};$('rgSummary').textContent=o.package+' — ৳'+o.price;$('rgUid').style.display='none';var lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='none';$('rgTrx').value='';$('rgPayModal').classList.add('show');};
  document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"],#buyBtn');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"],#uid');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgUid').style.display='';{const lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='';}$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
@@ -3541,7 +3544,7 @@ select.ad-search{appearance:auto}
     return Object.keys(obj).map(function(k){var o=obj[k];if(o&&typeof o==='object'){o.id=o.id||k;return o}return null}).filter(Boolean)
       .sort(function(a,b){return new Date(a.createdAt)-new Date(b.createdAt)});
   }
-  function sig(){return S.orders.length+':'+S.orders.map(function(x){return x.id+x.status}).join(',')}
+  function sig(){return S.orders.length+':'+S.orders.map(function(x){return x.id+x.status+(x.note||'')}).join(',')}
 
   function loadAll(){
     return Promise.all([RG.fb('GET','orders'),RG.fb('GET','site/cfg'),RG.fb('GET','admin/hash')]).then(function(a){
@@ -3609,7 +3612,7 @@ select.ad-search{appearance:auto}
         return '<div class="ad-card"><div class="ad-ord-h"><b>Order #'+esc(x.id)+'</b><span class="ad-st '+esc(x.status)+'">'+esc(x.status)+'</span></div>'
         +'<div class="ad-row"><span>Package</span><b>'+esc(x.package)+'</b></div><div class="ad-row"><span>Price</span><b>'+money(x.price)+'</b></div>'
         +(x.fields&&x.fields.length?x.fields.map(function(f){return '<div class="ad-row"><span>'+esc(f.l)+'</span><b data-copy="'+esc(f.v)+'" style="cursor:pointer">'+esc(f.v||'-')+'</b></div>'}).join(''):'<div class="ad-row"><span>Player UID</span><b>'+esc(x.uid)+'</b></div>')+'<div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
-        +'<div class="ad-row"><span>তারিখ</span><b>'+fmt(x.createdAt)+'</b></div><div class="ad-acts">'
+        +'<div class="ad-row"><span>তারিখ</span><b>'+fmt(x.createdAt)+'</b></div><div class="ad-note"><label class="ad-field" style="display:block;margin:12px 0 6px;font-weight:800;font-size:13px">💬 কাস্টমারকে মেসেজ / কারণ (অর্ডার পেজে দেখাবে)</label><textarea class="ad-search" rows="2" data-note="'+esc(x.id)+'" placeholder="যেমন: টাকা পাইনি / ভুল UID / পরে চেষ্টা করুন…">'+esc(S.draft&&S.draft[x.id]!==undefined?S.draft[x.id]:(x.note||''))+'</textarea><button class="ad-btn pri" style="margin-top:8px" data-notesave="'+esc(x.id)+'">💾 মেসেজ সেভ</button></div><div class="ad-acts">'
         +(x.status!=='Completed'?'<button class="ad-btn ok" data-act="Completed" data-id="'+esc(x.id)+'">✓ Complete</button>':'')
         +(x.status!=='Cancelled'?'<button class="ad-btn no" data-act="Cancelled" data-id="'+esc(x.id)+'">✕ Cancel</button>':'')
         +(x.status!=='Pending'?'<button class="ad-btn wa" data-act="Pending" data-id="'+esc(x.id)+'">↺ Pending</button>':'')
@@ -3870,6 +3873,8 @@ select.ad-search{appearance:auto}
     root.querySelectorAll('[data-filter]').forEach(function(b){b.onclick=function(){S.filter=b.dataset.filter;render()}});
     root.querySelectorAll('[data-copy]').forEach(function(b){b.onclick=function(){copy(b.dataset.copy)}});
     root.querySelectorAll('[data-act]').forEach(function(b){b.onclick=function(){act(b.dataset.act,b.dataset.id)}});
+    root.querySelectorAll('textarea[data-note]').forEach(function(t){t.oninput=function(){S.draft=S.draft||{};S.draft[t.dataset.note]=t.value}});
+    root.querySelectorAll('[data-notesave]').forEach(function(b){b.onclick=function(){saveNote(b.dataset.notesave)}});
     var q=$('#adQ');if(q)q.oninput=function(){S.q=q.value;render()};
 
     if(S.tab==='cards')bindCards();
@@ -3939,14 +3944,27 @@ select.ad-search{appearance:auto}
     }
   }
 
+  function saveNote(id){
+    var i=S.orders.findIndex(function(x){return x.id===id});if(i<0)return;
+    var ta=root.querySelector('textarea[data-note="'+id.replace(/"/g,'')+'"]');if(!ta)return;
+    var v=ta.value.trim();
+    /* ফাঁকা রাখলে মেসেজ মুছে যাবে (Firebase এ null = delete) */
+    RG.fb('PATCH','orders/'+enc(id),{note:v||null}).then(function(){
+      if(v)S.orders[i].note=v;else delete S.orders[i].note;
+      if(S.draft)delete S.draft[id];
+      S.sig=sig();toast(v?'মেসেজ সেভ হয়েছে ✓':'মেসেজ মুছে ফেলা হয়েছে');render();
+    }).catch(function(e){toast(errMsg(e))});
+  }
   function act(a,id){
     var i=S.orders.findIndex(function(x){return x.id===id});if(i<0)return;
     var d=new Date(),ds=d.toLocaleDateString('en-GB'),ts=d.toLocaleTimeString('en-US');
     if(a==='del'&&!confirm('Order #'+id+' মুছে ফেলবেন?'))return;
-    var req=a==='del'?RG.fb('DELETE','orders/'+enc(id)):RG.fb('PATCH','orders/'+enc(id),{status:a,updatedDate:ds,updatedTime:ts});
+    var patch={status:a,updatedDate:ds,updatedTime:ts},hasNote=false,nv='';
+    if(a!=='del'){var ta=root.querySelector('textarea[data-note="'+id.replace(/"/g,'')+'"]');if(ta){hasNote=true;nv=ta.value.trim();patch.note=nv}}
+    var req=a==='del'?RG.fb('DELETE','orders/'+enc(id)):RG.fb('PATCH','orders/'+enc(id),patch);
     req.then(function(){
       if(a==='del'){S.orders.splice(i,1);toast('অর্ডার মুছে গেছে')}
-      else{S.orders[i].status=a;S.orders[i].updatedDate=ds;S.orders[i].updatedTime=ts;toast('Order #'+id+' → '+a)}
+      else{S.orders[i].status=a;S.orders[i].updatedDate=ds;S.orders[i].updatedTime=ts;if(hasNote){if(nv)S.orders[i].note=nv;else delete S.orders[i].note;if(S.draft)delete S.draft[id]}toast('Order #'+id+' → '+a)}
       S.sig=sig();render();
     }).catch(function(e){toast(errMsg(e))});
   }
@@ -3961,7 +3979,7 @@ select.ad-search{appearance:auto}
   /* নতুন অর্ডার এলে নিজে থেকে দেখাবে */
   setInterval(function(){
     if(root.hidden||!authed()||document.hidden||['dash','orders','cust'].indexOf(S.tab)<0)return;
-    var a=document.activeElement;if(a&&a.id==='adQ')return;
+    var a=document.activeElement;if(a&&(a.id==='adQ'||(a.dataset&&a.dataset.note!==undefined)))return;
     var before=S.orders.length;
     RG.fb('GET','orders').then(function(j){S.orders=toArr(j);S.err=null;var s=sig();if(s!==S.sig){S.sig=s;if(S.orders.length>before){toast('🔔 নতুন অর্ডার এসেছে!');try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}render()}}).catch(function(){});
   },10000);
