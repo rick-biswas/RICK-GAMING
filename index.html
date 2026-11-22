@@ -531,6 +531,19 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
 #wlView .pk:active{transform:none;background:#eff5ff}
 #wlView .pk{-webkit-appearance:none;appearance:none;font-family:inherit}
 
+/* ===== CUSTOM CARD PAGE (admin থেকে যোগ করা কার্ড) ===== */
+#cxView{padding-left:10px;padding-right:10px;padding-bottom:120px}
+#cxPkGrid{gap:8px;margin:-3px}
+#cxView .pk{min-height:64px;padding:8px 6px;gap:3px;justify-content:center;border-radius:12px;border-width:1.5px;box-shadow:0 2px 6px -4px rgba(20,40,90,.25)}
+#cxView .pk span{font-size:14.5px;font-weight:700;line-height:1.3;color:#0f1f4d;letter-spacing:-.1px}
+#cxView .pk b{font-size:13px;font-weight:700;line-height:1.3;color:var(--v)}
+#cxView .pk.on{background:linear-gradient(160deg,#eff5ff,#fff);box-shadow:0 0 0 3px rgba(37,99,235,.15),0 8px 16px -10px rgba(37,99,235,.7)}
+#cxView .pk.on:after{top:-7px;right:-5px}
+#cxView .pk span,#cxView .pk b{pointer-events:none}
+#cxView .pk:active{transform:none;background:#eff5ff}
+#cxView .pk{-webkit-appearance:none;appearance:none;font-family:inherit}
+#cxView .pv-img img{width:100%;height:100%;object-fit:cover}
+
 /* ===== account menu panel ===== */
 .acc{position:fixed;inset:0;z-index:44;background:rgba(10,22,55,.5);opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s}
 .acc.show{opacity:1;visibility:visible;transition:opacity .3s,visibility 0s}
@@ -846,6 +859,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     <a class="q" href="#" data-link="youtube-channel"><span class="ic"><svg class="f"><use href="#yt"/></svg></span><span><small>Channel</small><b>YouTube</b></span></a>
   </div>
 
+  <div id="homeCards">
   <div class="sec"><h2><em>FREE FIRE TOPUP</em></h2></div>
   <div class="grid">
     <a class="card" href="#ff-likes" data-open="ff-likes"><div class="thumb ph"><img src="FF LIKES.jpg" alt="FF Likes" loading="lazy" decoding="async"></div><p>FF Likes</p></a>
@@ -859,6 +873,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
   <div class="sec"><h2><em>UID CHECKER</em></h2></div>
   <div class="grid">
     <a class="card" href="#uid-checker" data-open="uid-checker"><div class="thumb ph"><img src="uid checker.jpg" alt="UID Checker" loading="lazy" decoding="async"></div><p>UID Checker</p></a>
+  </div>
   </div>
 
 </main>
@@ -1098,6 +1113,49 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
       <span class="ti"><svg class="f"><use href="#tg"/></svg></span>
       <span><b>Telegram HelpLine <svg class="vb" viewBox="0 0 24 24"><path fill="#2979ff" d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.67-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.34 2.19c-1.39-.46-2.9-.2-3.91.81s-1.27 2.52-.81 3.91C2.63 9.33 1.75 10.57 1.75 12s.88 2.67 2.19 3.34c-.46 1.39-.2 2.9.81 3.91s2.52 1.27 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.67-.88 3.34-2.19c1.39.46 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34z"/><polygon fill="#fff" points="9.65 16.4 5.8 12.55 7.2 11.15 9.65 13.6 16.8 6.45 18.2 7.85"/></svg></b><p>সকাল ৮টা থেকে রাত ১২টা</p></span>
     </a>
+  </section>
+</main>
+
+<!-- CUSTOM CARD PAGE (অ্যাডমিন প্যানেল থেকে যোগ করা সব কার্ডের জন্য একটাই পেজ) -->
+<main class="wrap" id="cxView" hidden>
+  <button class="pv-back" type="button" id="cxBack"><svg class="i"><use href="#arr"/></svg>Back</button>
+
+  <section class="pv-hero">
+    <div class="pv-img"><div class="thumb ph"><img id="cxImg" src="" alt=""></div></div>
+    <div class="pv-info">
+      <h1 id="cxTitle"></h1>
+      <span class="pv-pill"><svg viewBox="0 0 24 24"><use href="#bolt"/></svg><span id="cxTag">২ সেকেন্ডে টপআপ</span></span>
+    </div>
+  </section>
+
+  <section class="pv-box">
+    <div class="pv-head"><span class="n">1</span><h2>Select Recharge</h2></div>
+    <div class="pv-body"><div class="pk-grid" id="cxPkGrid"></div></div>
+  </section>
+
+  <section class="pv-box">
+    <div class="pv-head"><span class="n">2</span><h2>Account Info</h2></div>
+    <div class="pv-body">
+      <label class="lbl" for="cxInp" id="cxLbl">এখানে গেমের আইডি কোড দিন</label>
+      <input class="inp" id="cxInp" type="text" inputmode="numeric" autocomplete="off" placeholder="এখানে গেমের আইডি কোড দিন">
+    </div>
+  </section>
+
+  <section class="pv-box">
+    <div class="pv-head"><span class="n">3</span><h2>Select one option</h2></div>
+    <div class="pv-body">
+      <div class="po-grid" id="cxPo">
+        <div role="button" tabindex="0" class="po on" data-pay="Wallet Pay"><div class="pbx"><img src="wallet.jpg" alt="" onerror="this.style.display='none'"></div><div class="pft">Wallet Pay</div></div>
+        <div role="button" tabindex="0" class="po" data-pay="Instant Pay"><div class="pbx"><img src="andmoney.jpg" alt="" onerror="this.style.display='none'"></div><div class="pft">Instant Pay</div></div>
+      </div>
+      <p class="hint need"><svg class="i"><use href="#info"/></svg><span>প্রোডাক্ট কিনতে আপনার প্রয়োজন <b id="cxNeed">0</b> ৳ ।</span></p>
+      <a class="btn login" id="cxBuy" href="#">অর্ডার করুন</a>
+    </div>
+  </section>
+
+  <section class="pv-box rules">
+    <div class="pv-head rh"><svg class="i"><use href="#doc"/></svg><h2>Rules &amp; Conditions</h2></div>
+    <div class="pv-body"><ul class="rl" id="cxRules"></ul></div>
   </section>
 </main>
 
@@ -1639,7 +1697,73 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     if(s.notice){var el=document.getElementById('popText');if(el){el.textContent='';s.notice.split(/\r?\n/).forEach(function(l,i){if(i)el.appendChild(document.createElement('br'));el.appendChild(document.createTextNode(l))})}}
     if(s.pay){var n=document.getElementById('rgNumber');if(n)n.textContent=s.pay}
   };
-  RG.applyAll=function(c,late){RG.applyImages(c);var r=RG.applyPackages(c,late);RG.applySettings(c);return r};
+  /* ===== হোম কার্ড সিস্টেম (অ্যাডমিনের "কার্ড" ট্যাব থেকে নিয়ন্ত্রিত) ===== */
+  RG.builtins={
+    'ff-likes':{view:'ffView',name:'FF Likes',img:'FF LIKES.jpg'},
+    'uid-topup':{view:'uidView',name:'UID Topup (BD)',img:'UID TOPUP (BD).jpg'},
+    'weekly-monthly':{view:'wmView',name:'Weekly/Monthly',img:'WEEKLYMONTHLY.jpg'},
+    'weekly-lite':{view:'wlView',name:'Weekly Lite',img:'WEEKLY LITE.jpg'},
+    'level-up-pass':{view:'luView',name:'Level Up Pass',img:'LEVEL UP PASS.jpg'},
+    'indonesia-server':{view:'inView',name:'Indonesia Server',img:'INDONESIA SERVER.jpg'},
+    'uid-checker':{view:'ucView',name:'UID Checker',img:'uid checker.jpg'}
+  };
+  RG.defaultHome=function(){
+    function b(id){return{id:id,b:1,name:RG.builtins[id].name}}
+    return{sections:[
+      {id:'s1',title:'FREE FIRE TOPUP',cards:['ff-likes','uid-topup','weekly-monthly','weekly-lite','level-up-pass','indonesia-server'].map(b)},
+      {id:'s2',title:'UID CHECKER',cards:[b('uid-checker')]}
+    ]};
+  };
+  RG.placeholder=function(n){
+    var t=(String(n||'?').trim().charAt(0)||'?').toUpperCase().replace(/[<>&"']/g,'?');
+    var s='<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1e3a8a"/><stop offset="1" stop-color="#2563eb"/></linearGradient></defs><rect width="400" height="400" fill="url(#g)"/><text x="200" y="255" font-size="180" font-weight="800" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif">'+t+'</text></svg>';
+    return 'data:image/svg+xml;charset=utf-8,'+encodeURIComponent(s);
+  };
+  RG.findCard=function(id){
+    var h=RG.cfg&&RG.cfg.home; if(!h||!Array.isArray(h.sections))return null;
+    for(var a=0;a<h.sections.length;a++){var cs=h.sections[a].cards||[];for(var i=0;i<cs.length;i++)if(cs[i]&&cs[i].id===id&&!cs[i].b)return cs[i]}
+    return null;
+  };
+  RG.applyCards=function(c){
+    var h=(c||RG.cfg).home, root=document.getElementById('homeCards');
+    if(!root||!h||!Array.isArray(h.sections)||!h.sections.length)return;
+    var im=(c||RG.cfg).images||{};
+    var sig=JSON.stringify(h);
+    /* বিল্ট-ইন কার্ডের নাম প্রোডাক্ট পেজের টাইটেলেও বসবে */
+    h.sections.forEach(function(s){(s.cards||[]).forEach(function(cd){
+      var bi=cd&&cd.b&&RG.builtins[cd.id]; if(!bi||!cd.name)return;
+      var v=document.getElementById(bi.view), t=v&&v.querySelector('h1'); if(t&&t.textContent!==cd.name)t.textContent=cd.name;
+    })});
+    if(RG._hsig!==sig){
+      RG._hsig=sig;
+      var frag=document.createDocumentFragment();
+      h.sections.forEach(function(s){
+        var cards=(s.cards||[]).filter(function(cd){return cd&&!cd.hidden&&(!cd.b||RG.builtins[cd.id])});
+        if(!cards.length)return;
+        var sec=document.createElement('div');sec.className='sec';
+        var h2=document.createElement('h2'),em=document.createElement('em');em.textContent=s.title||'';h2.appendChild(em);sec.appendChild(h2);frag.appendChild(sec);
+        var g=document.createElement('div');g.className='grid';
+        cards.forEach(function(cd){
+          var bi=cd.b?RG.builtins[cd.id]:null, key=bi?cd.id:'c-'+cd.id, name=cd.name||(bi?bi.name:'');
+          var a=document.createElement('a');a.className='card';a.href='#'+key;a.setAttribute('data-open',key);
+          var th=document.createElement('div');th.className='thumb ph';
+          var img=document.createElement('img');img.alt=name;img.loading='lazy';img.decoding='async';
+          if(bi){img.setAttribute('data-o',bi.img);img.src=im[bi.img]||bi.img}else{img.src=cd.img||RG.placeholder(name)}
+          th.appendChild(img);a.appendChild(th);
+          var p=document.createElement('p');p.textContent=name;a.appendChild(p);
+          g.appendChild(a);
+        });
+        frag.appendChild(g);
+      });
+      root.innerHTML='';root.appendChild(frag);
+    }
+    if(RG.routeCx)RG.routeCx();
+  };
+  document.addEventListener('click',function(e){
+    var a=e.target.closest&&e.target.closest('a.card[data-open]'); if(!a)return;
+    e.preventDefault(); var t=a.getAttribute('data-open'); if(location.hash!=='#'+t)location.hash=t;
+  });
+  RG.applyAll=function(c,late){try{RG.applyCards(c)}catch(e){}RG.applyImages(c);var r=RG.applyPackages(c,late);RG.applySettings(c);return r};
 
   /* অ্যাডমিন সেভ করলে /site/v বদলায়; ভিজিটর শুধু তখনই পুরো কনফিগ নামায় */
   RG.pull=function(){
@@ -3222,6 +3346,61 @@ setInterval(fetchFreshAccountConfig, 15000);
 </script>
 
 
+<script>
+// ==========================================
+// CUSTOM CARD PAGE — অ্যাডমিন থেকে যোগ করা কার্ডের পেজ
+// ==========================================
+(function(){
+  var home=document.getElementById('homeView'), foot=document.getElementById('siteFooter'), cx=document.getElementById('cxView');
+  var grid=document.getElementById('cxPkGrid'), inp=document.getElementById('cxInp'), need=document.getElementById('cxNeed');
+  var DEF_RULES=['সঠিক আইডি দিয়ে অর্ডার করুন। ভুল আইডিতে টপআপ হয়ে গেলে কর্তৃপক্ষ দায়ী থাকবে না।','অর্ডার করার আগে আইডি ভালো করে চেক করে নিন।','টপআপ সম্পন্ন হতে সাধারণত ২ সেকেন্ড থেকে কয়েক মিনিট সময় লাগতে পারে।','একবার অর্ডার সাবমিট করার পর বাতিল বা রিফান্ড করা হয় না।','যেকোনো সমস্যায় অর্ডারের স্ক্রিনশট সহ যোগাযোগ করুন।'];
+  var curId=null;
+  function fill(c){
+    if(curId===c.id&&cx.dataset.sig===JSON.stringify(c))return;
+    curId=c.id;cx.dataset.sig=JSON.stringify(c);
+    document.getElementById('cxImg').src=c.img||RG.placeholder(c.name);
+    document.getElementById('cxTitle').textContent=c.name||'';
+    document.getElementById('cxTag').textContent=c.tag||'২ সেকেন্ডে টপআপ';
+    var lb=c.label||'এখানে গেমের আইডি কোড দিন';
+    document.getElementById('cxLbl').textContent=lb;inp.placeholder=lb;inp.value='';
+    inp.setAttribute('inputmode',c.num===0?'text':'numeric');
+    grid.innerHTML='';need.textContent='0';
+    (c.packages||[]).forEach(function(p){
+      var b=document.createElement('button');b.type='button';b.className='pk';
+      b.dataset.name=(c.name||'')+' · '+p.d;b.dataset.price=+p.p||0;
+      b.innerHTML='<span></span><b></b>';b.firstChild.textContent=p.d;b.lastChild.textContent='BDT '+(+p.p||0);
+      grid.appendChild(b);
+    });
+    var ul=document.getElementById('cxRules');ul.innerHTML='';
+    var rules=String(c.rules||'').split(/\r?\n/).map(function(x){return x.trim()}).filter(Boolean);
+    (rules.length?rules:DEF_RULES).forEach(function(t){var li=document.createElement('li');li.textContent=t;ul.appendChild(li)});
+  }
+  function r(){
+    var m=/^#c-(.+)$/.exec(location.hash);
+    if(!m){cx.hidden=true;return}
+    var c=RG.findCard(decodeURIComponent(m[1]));
+    if(!c){cx.hidden=true;return}
+    home.hidden=true;foot.hidden=true;cx.hidden=false;
+    var was=curId;fill(c);
+    ['ffView','uidView','wmView','wlView','luView','inView','ucView','orView','cdView','acView','trView','ctView'].forEach(function(id){var e=document.getElementById(id);if(e)e.hidden=true});
+    if(was!==c.id)window.scrollTo(0,0);
+  }
+  RG.routeCx=r;
+  grid.addEventListener('click',function(e){
+    var b=e.target.closest&&e.target.closest('.pk'); if(!b||!grid.contains(b))return;
+    [].slice.call(grid.querySelectorAll('.pk')).forEach(function(x){x.classList.remove('on')});
+    b.classList.add('on');need.textContent=b.dataset.price;
+  });
+  [].slice.call(document.querySelectorAll('#cxPo .po')).forEach(function(b){
+    b.onclick=function(){[].slice.call(document.querySelectorAll('#cxPo .po')).forEach(function(x){x.classList.remove('on')});b.classList.add('on')};
+  });
+  inp.addEventListener('input',function(){if(inp.getAttribute('inputmode')==='numeric')this.value=this.value.replace(/\D/g,'')});
+  document.getElementById('cxBack').onclick=function(){if(history.length>1&&/^#c-/.test(location.hash)){history.back()}else{location.hash=''}};
+  window.addEventListener('hashchange',r);
+  r();
+})();
+</script>
+
 <!-- ============ ADMIN PANEL (open with index.html#admin) ============ -->
 <style>
 #adRoot{position:fixed;inset:0;z-index:10000;background:#f5f8ff;overflow:auto;color:#0f172a;font-family:inherit;-webkit-overflow-scrolling:touch}
@@ -3278,6 +3457,17 @@ setInterval(fetchFreshAccountConfig, 15000);
 .ad-img img{width:96px;height:64px;object-fit:cover;border-radius:12px;background:#eef2f8;border:1px solid #e1e8f5;flex:none}
 textarea.ad-search{resize:vertical}
 .ad-live{background:#e8f7ee;color:#087443;border-radius:12px;padding:9px 13px;font-size:12.5px;font-weight:750;margin-bottom:12px}
+.ad-sech{display:grid;grid-template-columns:1fr 40px 40px 40px;gap:6px;margin-bottom:10px}
+.ad-sech .ad-search{font-weight:800}
+.ad-sech .ad-btn{padding:9px 0;text-align:center}
+.ad-crd{border:1px solid #e1e8f5;border-radius:14px;padding:10px;margin-bottom:8px;background:#fafcff}
+.ad-crd.off{opacity:.65}
+.ad-cr{display:grid;grid-template-columns:52px 1fr;gap:8px;align-items:center}
+.ad-crb{grid-column:1/-1;display:flex;gap:6px}
+.ad-crb .ad-btn{flex:1;padding:9px 4px}
+.ad-cr img{width:52px;height:52px;object-fit:cover;border-radius:11px;background:#eef2f8;border:1px solid #e1e8f5}
+.ad-ed{margin-top:12px;padding-top:12px;border-top:1px dashed #d8e0ec}
+select.ad-search{appearance:auto}
 .ad-pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:12px;font-size:12.5px;overflow:auto;margin:10px 0;white-space:pre}
 </style>
 <div id="adRoot" hidden></div>
@@ -3286,7 +3476,7 @@ textarea.ad-search{resize:vertical}
 <script>
 (function(){
   var AUTH='rgAdminAuthV2';
-  var root=document.getElementById('adRoot'), toastEl=document.getElementById('adToast'), tt, pendingImg=null;
+  var root=document.getElementById('adRoot'), toastEl=document.getElementById('adToast'), tt, pendingImg=null, pendingCard=null;
   var S={tab:'dash',filter:'All',q:'',grid:'uidPkGrid',first:null,orders:[],cfg:{},pk:{},touched:{},sig:'',dirty:false,err:null,busy:false};
   var IMGS=[['Main logo.jpg','সাইটের লোগো'],['Banner 1.jpg','হোম ব্যানার ১'],['Banner 2.jpg','হোম ব্যানার ২'],['Banner 3.jpg','হোম ব্যানার ৩'],['FF LIKES.jpg','FF Likes কার্ড'],['UID TOPUP (BD).jpg','UID Topup (BD) কার্ড'],['WEEKLYMONTHLY.jpg','Weekly/Monthly কার্ড'],['WEEKLY LITE.jpg','Weekly Lite কার্ড'],['LEVEL UP PASS.jpg','Level Up Pass কার্ড'],['INDONESIA SERVER.jpg','Indonesia Server কার্ড'],['uid checker.jpg','UID Checker কার্ড'],['Notification.jpg','নোটিফিকেশন ছবি'],['wallet.jpg','Wallet Pay আইকন'],['andmoney.jpg','Instant Pay আইকন']];
   var RULES='{\n  "rules": {\n    ".read": true,\n    ".write": true\n  }\n}';
@@ -3320,7 +3510,7 @@ textarea.ad-search{resize:vertical}
   function loadAll(){
     return Promise.all([RG.fb('GET','orders'),RG.fb('GET','site/cfg'),RG.fb('GET','admin/hash')]).then(function(a){
       if(a[2]&&a[2]!==localStorage.getItem(AUTH)){logout();toast('পাসওয়ার্ড বদলেছে — আবার লগইন করুন');return}
-      S.orders=toArr(a[0]);S.cfg=a[1]||{};S.sig=sig();S.err=null;
+      S.orders=toArr(a[0]);S.cfg=a[1]||{};if(!S.homeDirty)S.home=null;S.sig=sig();S.err=null;
     }).catch(function(e){S.err=e});
   }
   function saveCfg(msg){
@@ -3446,6 +3636,134 @@ textarea.ad-search{resize:vertical}
     return '<div class="ad-live">🟢 Firebase সংযুক্ত — সব অর্ডার ও পরিবর্তন লাইভ</div>';
   }
 
+  /* ---------- কার্ড ম্যানেজার ---------- */
+  function uid6(){return Date.now().toString(36)+Math.random().toString(36).slice(2,5)}
+  function homeData(){
+    if(!S.home){
+      var h=(S.cfg.home&&Array.isArray(S.cfg.home.sections)&&S.cfg.home.sections.length)?S.cfg.home:RG.defaultHome();
+      S.home=JSON.parse(JSON.stringify(h));
+    }
+    S.home.sections.forEach(function(s){s.cards=Array.isArray(s.cards)?s.cards.filter(Boolean):[];s.cards.forEach(function(c){if(!c.b)c.packages=Array.isArray(c.packages)?c.packages.filter(Boolean):[]})});
+    return S.home;
+  }
+  function cardImg(c){
+    if(c.b){var o=RG.builtins[c.id].img;return (S.cfg.images&&S.cfg.images[o])||o}
+    return c.img||RG.placeholder(c.name);
+  }
+  function cardsView(){
+    var H=homeData();
+    var h='<div class="ad-card"><b>হোম পেজের কার্ড ও সেকশন</b><p class="ad-note">কার্ডের নাম বদলান, ছবি বদলান, নতুন কার্ড/সেকশন যোগ করুন, ↑↓ দিয়ে সাজান। <b>পরিবর্তন করে শেষে অবশ্যই "সেভ করুন" চাপুন</b> — তখন সবার ফোনে লাইভ হবে।<br>✎ চাপলে ছবি, প্যাকেজ ও অন্যান্য সেটিং খুলবে।</p>'
+      +'<div class="ad-acts"><button class="ad-btn pri" id="adHSave">সেভ করুন</button><button class="ad-btn" id="adSecAdd">＋ নতুন সেকশন</button><button class="ad-btn gh" id="adHReset">ডিফল্টে ফিরুন</button></div>'
+      +(S.homeDirty?'<p class="ad-note" style="color:#b45309;margin-top:8px"><b>⚠ সেভ না করা পরিবর্তন আছে</b></p>':'')+'</div>';
+    H.sections.forEach(function(s,si){
+      h+='<div class="ad-card"><div class="ad-sech"><input class="ad-search" data-st="'+si+'" value="'+esc(s.title)+'" placeholder="সেকশনের নাম"><button class="ad-btn" data-secmv="'+si+'" data-d="-1">↑</button><button class="ad-btn" data-secmv="'+si+'" data-d="1">↓</button><button class="ad-btn no" data-secdel="'+si+'">✕</button></div>';
+      if(!s.cards.length)h+='<p class="ad-note" style="margin:10px 0">এই সেকশনে কোনো কার্ড নেই।</p>';
+      s.cards.forEach(function(c){
+        var open=S.openCard===c.id;
+        h+='<div class="ad-crd'+(c.hidden?' off':'')+'"><div class="ad-cr"><img src="'+esc(cardImg(c))+'" alt=""><input class="ad-search" data-cn="'+esc(c.id)+'" value="'+esc(c.name)+'" placeholder="কার্ডের নাম">'
+          +'<div class="ad-crb"><button class="ad-btn" data-cmv="'+esc(c.id)+'" data-d="-1">↑ উপরে</button><button class="ad-btn" data-cmv="'+esc(c.id)+'" data-d="1">↓ নিচে</button><button class="ad-btn'+(open?' ok':'')+'" data-cedit="'+esc(c.id)+'">'+(open?'▲ বন্ধ':'✎ এডিট')+'</button></div></div>';
+        if(c.hidden)h+='<div class="ad-note" style="margin-top:6px">🚫 হোম পেজে লুকানো আছে</div>';
+        if(open){
+          h+='<div class="ad-ed">';
+          h+='<div class="ad-acts" style="margin:0 0 10px"><button class="ad-btn pri" data-cup="'+esc(c.id)+'">ছবি আপলোড</button><button class="ad-btn" data-curl="'+esc(c.id)+'">ছবির লিংক</button>'+((c.b?(S.cfg.images&&S.cfg.images[RG.builtins[c.id].img]):c.img)?'<button class="ad-btn gh" data-crst="'+esc(c.id)+'">ছবি রিসেট</button>':'')+'</div>';
+          if(c.b){
+            h+='<p class="ad-note">এটি মূল কার্ড। এর দাম/প্যাকেজ বদলাতে উপরের <b>"দাম/প্যাকেজ"</b> ট্যাবে যান। ছবি বদলালে সাথে সাথে সেভ হয়ে যাবে।</p>'
+              +'<div class="ad-acts"><button class="ad-btn '+(c.hidden?'ok':'wa')+'" data-chide="'+esc(c.id)+'">'+(c.hidden?'👁 হোমে দেখান':'🚫 হোম থেকে লুকান')+'</button></div>';
+          }else{
+            h+='<label class="ad-field">সাবটাইটেল (নামের নিচের ব্যাজ)</label><input class="ad-search" data-cf="tag" data-cid="'+esc(c.id)+'" value="'+esc(c.tag||'')+'" placeholder="২ সেকেন্ডে টপআপ">'
+              +'<label class="ad-field">ইনপুট বক্সের লেখা (কাস্টমার কী দেবে)</label><input class="ad-search" data-cf="label" data-cid="'+esc(c.id)+'" value="'+esc(c.label||'')+'" placeholder="এখানে গেমের আইডি কোড দিন">'
+              +'<label style="display:flex;gap:8px;align-items:center;margin:10px 0;font-size:13px;font-weight:700"><input type="checkbox" data-cnum="'+esc(c.id)+'"'+(c.num===0?'':' checked')+'> শুধু সংখ্যা নেওয়া যাবে (আইডি/নম্বরের জন্য)</label>'
+              +'<label class="ad-field">সেকশন</label><select class="ad-search" data-csec="'+esc(c.id)+'">'+H.sections.map(function(x,k){return '<option value="'+k+'"'+(x===s?' selected':'')+'>'+esc(x.title||('সেকশন '+(k+1)))+'</option>'}).join('')+'</select>'
+              +'<label class="ad-field">প্যাকেজ ও দাম</label><div class="ad-pkh"><span>প্যাকেজের নাম</span><span>দাম ৳</span><span></span></div>'
+              +c.packages.map(function(p,i){return '<div class="ad-pk"><input class="ad-search" data-cp="d" data-cid="'+esc(c.id)+'" data-i="'+i+'" value="'+esc(p.d)+'" placeholder="যেমন 100 Diamond"><input class="ad-search" data-cp="p" data-cid="'+esc(c.id)+'" data-i="'+i+'" inputmode="decimal" value="'+esc(p.p)+'"><button class="ad-btn no" data-cpdel="'+esc(c.id)+'" data-i="'+i+'">✕</button></div>'}).join('')
+              +'<div class="ad-acts"><button class="ad-btn" data-cpadd="'+esc(c.id)+'">＋ নতুন প্যাকেজ</button></div>'
+              +'<label class="ad-field">নিয়ম-কানুন (প্রতি লাইনে একটা। ফাঁকা রাখলে ডিফল্ট দেখাবে)</label><textarea class="ad-search" rows="4" data-cf="rules" data-cid="'+esc(c.id)+'">'+esc(c.rules||'')+'</textarea>'
+              +'<div class="ad-acts" style="margin-top:12px"><button class="ad-btn no" data-cdel="'+esc(c.id)+'">🗑 এই কার্ড মুছুন</button></div>';
+          }
+          h+='</div>';
+        }
+        h+='</div>';
+      });
+      h+='<div class="ad-acts"><button class="ad-btn pri" data-cadd="'+si+'">＋ এই সেকশনে নতুন কার্ড</button></div></div>';
+    });
+    h+='<input type="file" id="adCardFile" accept="image/*" hidden>';
+    return h;
+  }
+  function bindCards(){
+    var H=homeData();
+    function loc(id){for(var a=0;a<H.sections.length;a++){var cs=H.sections[a].cards;for(var b=0;b<cs.length;b++)if(cs[b].id===id)return{s:a,i:b,c:cs[b],arr:cs}}return null}
+    function dirty(){S.homeDirty=true}
+    function all(sel,fn){root.querySelectorAll(sel).forEach(fn)}
+    all('[data-st]',function(i){i.oninput=function(){H.sections[+i.dataset.st].title=i.value;dirty()}});
+    all('[data-secmv]',function(b){b.onclick=function(){var s=+b.dataset.secmv,t=s+(+b.dataset.d);if(t<0||t>=H.sections.length)return;var x=H.sections[s];H.sections[s]=H.sections[t];H.sections[t]=x;dirty();render()}});
+    all('[data-secdel]',function(b){b.onclick=function(){
+      if(H.sections.length<2)return toast('কমপক্ষে একটি সেকশন থাকতে হবে');
+      var s=H.sections[+b.dataset.secdel];
+      if(s.cards.length&&!confirm('"'+s.title+'" সেকশন ও এর ভেতরের '+s.cards.length+'টি কার্ড হোম পেজ থেকে সরে যাবে। নিশ্চিত?'))return;
+      H.sections.splice(+b.dataset.secdel,1);dirty();render();
+    }});
+    $('#adSecAdd').onclick=function(){H.sections.push({id:'s'+uid6(),title:'নতুন সেকশন',cards:[]});dirty();render();toast('নতুন সেকশন যোগ হয়েছে')};
+    all('[data-cn]',function(i){i.oninput=function(){var l=loc(i.dataset.cn);if(l){l.c.name=i.value;dirty()}}});
+    all('[data-cmv]',function(b){b.onclick=function(){var l=loc(b.dataset.cmv);if(!l)return;var t=l.i+(+b.dataset.d);if(t<0||t>=l.arr.length)return;var x=l.arr[l.i];l.arr[l.i]=l.arr[t];l.arr[t]=x;dirty();render()}});
+    all('[data-cedit]',function(b){b.onclick=function(){S.openCard=S.openCard===b.dataset.cedit?null:b.dataset.cedit;render()}});
+    all('[data-cadd]',function(b){b.onclick=function(){
+      var c={id:'k'+uid6(),name:'নতুন কার্ড',img:'',tag:'২ সেকেন্ডে টপআপ',label:'এখানে গেমের আইডি কোড দিন',num:1,rules:'',packages:[{d:'প্যাকেজ ১',p:0}]};
+      H.sections[+b.dataset.cadd].cards.push(c);S.openCard=c.id;dirty();render();toast('নতুন কার্ড যোগ হয়েছে — নাম, ছবি ও দাম দিন');
+    }});
+    all('[data-chide]',function(b){b.onclick=function(){var l=loc(b.dataset.chide);if(l){l.c.hidden=!l.c.hidden;dirty();render()}}});
+    all('[data-cdel]',function(b){b.onclick=function(){var l=loc(b.dataset.cdel);if(!l)return;if(!confirm('"'+l.c.name+'" কার্ডটি মুছে ফেলবেন?'))return;l.arr.splice(l.i,1);S.openCard=null;dirty();render()}});
+    all('[data-csec]',function(sel){sel.onchange=function(){var l=loc(sel.dataset.csec);if(!l)return;var to=+sel.value;if(to===l.s)return;l.arr.splice(l.i,1);H.sections[to].cards.push(l.c);dirty();render()}});
+    all('[data-cf]',function(i){i.oninput=function(){var l=loc(i.dataset.cid);if(l){l.c[i.dataset.cf]=i.value;dirty()}}});
+    all('[data-cnum]',function(i){i.onchange=function(){var l=loc(i.dataset.cnum);if(l){l.c.num=i.checked?1:0;dirty()}}});
+    all('[data-cp]',function(i){i.oninput=function(){var l=loc(i.dataset.cid);if(!l)return;var p=l.c.packages[+i.dataset.i];if(!p)return;if(i.dataset.cp==='d')p.d=i.value;else p.p=Math.max(0,Math.round(+i.value||0));dirty()}});
+    all('[data-cpdel]',function(b){b.onclick=function(){var l=loc(b.dataset.cpdel);if(!l)return;if(l.c.packages.length<2)return toast('কমপক্ষে একটি প্যাকেজ থাকতে হবে');l.c.packages.splice(+b.dataset.i,1);dirty();render()}});
+    all('[data-cpadd]',function(b){b.onclick=function(){var l=loc(b.dataset.cpadd);if(!l)return;l.c.packages.push({d:'নতুন প্যাকেজ',p:0});dirty();render()}});
+    all('[data-cup]',function(b){b.onclick=function(){pendingCard=b.dataset.cup;var f=$('#adCardFile');f.value='';f.click()}});
+    all('[data-curl]',function(b){b.onclick=function(){
+      var l=loc(b.dataset.curl);if(!l)return;
+      var u=prompt('ছবির লিংক বসান (https://...)','');if(!u)return;u=u.trim();
+      if(!/^https?:\/\//i.test(u))return toast('সঠিক লিংক দিন (https:// দিয়ে শুরু)');
+      setCardImg(l.c,u);
+    }});
+    all('[data-crst]',function(b){b.onclick=function(){var l=loc(b.dataset.crst);if(l)setCardImg(l.c,'')}});
+    function setCardImg(c,url){
+      if(c.b){
+        var o=RG.builtins[c.id].img;S.cfg.images=S.cfg.images||{};
+        if(url)S.cfg.images[o]=url;else delete S.cfg.images[o];
+        S.dirty=true;return saveCfg(url?'ছবি বদলে গেছে ✓':'ছবি রিসেট হয়েছে').then(render);
+      }
+      c.img=url;dirty();render();toast(url?'ছবি বসেছে — "সেভ করুন" চাপুন':'ছবি রিসেট — "সেভ করুন" চাপুন');
+    }
+    $('#adCardFile').onchange=function(e){
+      var f=e.target.files[0];if(!f||!pendingCard)return;var l=loc(pendingCard);if(!l)return;toast('আপলোড হচ্ছে…');
+      shrink(f,700).then(function(d){setCardImg(l.c,d)}).catch(function(){toast('ছবি আপলোড হয়নি')});
+    };
+    $('#adHSave').onclick=function(){
+      for(var a=0;a<H.sections.length;a++){
+        var s=H.sections[a];
+        if(!String(s.title).trim())return toast('সেকশনের নাম ফাঁকা রাখা যাবে না');
+        for(var b=0;b<s.cards.length;b++){
+          var c=s.cards[b];
+          if(!String(c.name).trim())return toast('কার্ডের নাম ফাঁকা রাখা যাবে না');
+          if(!c.b){
+            if(!c.packages.length)return toast('"'+c.name+'" কার্ডে কমপক্ষে একটি প্যাকেজ দিন');
+            for(var k=0;k<c.packages.length;k++){
+              if(!String(c.packages[k].d).trim())return toast('"'+c.name+'" কার্ডের প্যাকেজের নাম ফাঁকা');
+              if(!(c.packages[k].p>0))return toast('"'+c.name+'" কার্ডের প্যাকেজের দাম দিন');
+            }
+          }
+        }
+      }
+      S.cfg.home=JSON.parse(JSON.stringify(H));S.dirty=true;
+      saveCfg('কার্ড সেভ হয়েছে — সাইটে লাইভ ✓').then(function(ok){if(ok){S.homeDirty=false;render()}});
+    };
+    $('#adHReset').onclick=function(){
+      if(!confirm('হোম পেজের সব কার্ড ও সেকশন আগের ডিফল্ট অবস্থায় ফিরবে (নতুন যোগ করা কার্ড মুছে যাবে)। নিশ্চিত?'))return;
+      delete S.cfg.home;S.home=null;S.homeDirty=false;S.openCard=null;
+      saveCfg('ডিফল্টে ফিরেছে').then(function(ok){if(ok)location.reload()});
+    };
+  }
+
   /* ---------- render ---------- */
   function render(){
     if(!authed()){
@@ -3460,9 +3778,9 @@ textarea.ad-search{resize:vertical}
       return loginView();
     }
     var o=S.orders,pend=o.filter(function(x){return x.status==='Pending'}).length;
-    var tabs=[['dash','ড্যাশবোর্ড'],['orders','অর্ডার'+(pend?' ('+pend+')':'')],['cust','কাস্টমার'],['pk','দাম/প্যাকেজ'],['img','ছবি/লোগো'],['set','সেটিংস']];
+    var tabs=[['dash','ড্যাশবোর্ড'],['orders','অর্ডার'+(pend?' ('+pend+')':'')],['cust','কাস্টমার'],['cards','কার্ড'],['pk','দাম/প্যাকেজ'],['img','ছবি/লোগো'],['set','সেটিংস']];
     var body={dash:dashView,orders:ordersView,cust:custView}[S.tab];
-    body=body?body(o):S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
+    body=body?body(o):S.tab==='cards'?cardsView():S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
     var keepQ=document.activeElement&&document.activeElement.id==='adQ';
     var st=root.scrollTop;
     root.innerHTML='<div class="ad-wrap"><div class="ad-top"><div class="ad-ic">A</div><h1>Admin Panel</h1><button class="ad-btn" id="adRef" title="রিফ্রেশ">⟳</button><button class="ad-btn" id="adSite">সাইট</button><button class="ad-btn no" id="adOut">লগআউট</button></div>'
@@ -3513,6 +3831,7 @@ textarea.ad-search{resize:vertical}
     root.querySelectorAll('[data-act]').forEach(function(b){b.onclick=function(){act(b.dataset.act,b.dataset.id)}});
     var q=$('#adQ');if(q)q.oninput=function(){S.q=q.value;render()};
 
+    if(S.tab==='cards')bindCards();
     if(S.tab==='pk'){
       var l=gridList();
       root.querySelectorAll('[data-grid]').forEach(function(b){b.onclick=function(){S.grid=b.dataset.grid;render()}});
