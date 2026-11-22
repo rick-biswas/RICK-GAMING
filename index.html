@@ -544,6 +544,8 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
 #cxView .pk{-webkit-appearance:none;appearance:none;font-family:inherit}
 #cxView .pv-img img{width:100%;height:100%;object-fit:cover}
 
+.cx-f{margin-top:16px}.cx-f:first-child{margin-top:0}.cx-f .lbl{display:block;margin-bottom:8px}.cx-f .lbl i{color:#d92d20;font-style:normal;margin-left:3px}
+
 /* ===== account menu panel ===== */
 .acc{position:fixed;inset:0;z-index:44;background:rgba(10,22,55,.5);opacity:0;visibility:hidden;transition:opacity .3s,visibility 0s .3s}
 .acc.show{opacity:1;visibility:visible;transition:opacity .3s,visibility 0s}
@@ -1136,8 +1138,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
   <section class="pv-box">
     <div class="pv-head"><span class="n">2</span><h2>Account Info</h2></div>
     <div class="pv-body">
-      <label class="lbl" for="cxInp" id="cxLbl">এখানে গেমের আইডি কোড দিন</label>
-      <input class="inp" id="cxInp" type="text" inputmode="numeric" autocomplete="off" placeholder="এখানে গেমের আইডি কোড দিন">
+      <div id="cxFields"></div>
     </div>
   </section>
 
@@ -1149,7 +1150,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
         <div role="button" tabindex="0" class="po" data-pay="Instant Pay"><div class="pbx"><img src="andmoney.jpg" alt="" onerror="this.style.display='none'"></div><div class="pft">Instant Pay</div></div>
       </div>
       <p class="hint need"><svg class="i"><use href="#info"/></svg><span>প্রোডাক্ট কিনতে আপনার প্রয়োজন <b id="cxNeed">0</b> ৳ ।</span></p>
-      <a class="btn login" id="cxBuy" href="#">অর্ডার করুন</a>
+      <a class="btn login" id="cxGo" href="#">অর্ডার করুন</a>
     </div>
   </section>
 
@@ -1642,6 +1643,8 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
   function q(s,r){return Array.prototype.slice.call((r||document).querySelectorAll(s))}
 
   /* Firebase REST helper: RG.fb('GET'|'PUT'|'PATCH'|'DELETE', 'path', body) */
+  RG.encCfg=function(c){var o=JSON.parse(JSON.stringify(c));if(o.images){var n={};Object.keys(o.images).forEach(function(k){n[k.replace(/\./g,'%2E')]=o.images[k]});o.images=n}return o};
+  RG.decCfg=function(c){if(c&&c.images){var n={};Object.keys(c.images).forEach(function(k){n[k.replace(/%2E/g,'.')]=c.images[k]});c.images=n}return c};
   RG.fb=function(method,path,body){
     var o={method:method,cache:'no-store'};
     if(body!==undefined){o.headers={'Content-Type':'application/json'};o.body=JSON.stringify(body)}
@@ -1770,7 +1773,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     RG.fb('GET','site/v').then(function(v){
       if(v==null||(RG.cfg&&RG.cfg.v===v))return;
       return RG.fb('GET','site/cfg').then(function(c){
-        if(!c||typeof c!=='object')return;
+        if(!c||typeof c!=='object')return;RG.decCfg(c);
         try{localStorage.setItem(KEY,JSON.stringify(c))}catch(e){}
         RG.cfg=c;
         if(RG.applyAll(c,true))location.reload();
@@ -3334,13 +3337,14 @@ setInterval(fetchFreshAccountConfig, 15000);
    if(window.RG&&RG.fb)RG.fb('PATCH','orders/'+encodeURIComponent(id),{name:n}).catch(()=>{});
   });
  }
- function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!tried[o.id]||pending[o.uid])?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>Player ID</span><b class="pid">${esc(o.uid)}</b><b class="pnm">${nm}</b></div><div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
+ function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!o.fields&&(!tried[o.id]||pending[o.uid]))?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>${o.fields&&o.fields[0]?esc(o.fields[0].l):'Player ID'}</span><b class="pid">${o.fields&&o.fields[0]&&o.fields[0].t==='password'?'••••••':esc(o.uid)}</b><b class="pnm">${nm}</b></div>${(o.fields||[]).slice(1).map(f=>`<div class="or-row"><span>${esc(f.l)}</span><b>${f.t==='password'?'••••••':esc(f.v||'-')}</b></div>`).join('')}<div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!o.fields&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
  window.renderOrders=render;
- document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"],#buyBtn');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"],#uid');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
+ window.rgOpenPay=function(o){current={package:o.package,price:o.price,viewId:'cxView',fields:o.fields,uid:o.uid};$('rgSummary').textContent=o.package+' — ৳'+o.price;$('rgUid').style.display='none';var lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='none';$('rgTrx').value='';$('rgPayModal').classList.add('show');};
+ document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"],#buyBtn');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"],#uid');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgUid').style.display='';{const lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='';}$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
  document.querySelectorAll('[data-rg-method]').forEach(b=>b.addEventListener('click',()=>{method=b.dataset.rgMethod;document.querySelectorAll('[data-rg-method]').forEach(x=>x.classList.toggle('active',x===b));}));
  $('rgCopy').onclick=()=>{const n=$('rgNumber').textContent.trim();if(navigator.clipboard?.writeText)navigator.clipboard.writeText(n).then(()=>$('rgCopy').textContent='কপি হয়েছে').catch(()=>alert(n));else alert(n)};
  $('rgClose').onclick=()=>$('rgPayModal').classList.remove('show');
- $('rgSubmit').onclick=()=>{const uid=$('rgUid').value.trim(),trx=$('rgTrx').value.trim();if(uid.length<6){alert('সঠিক Player UID দিন');return}if(trx.length<5){alert('সঠিক Transaction ID দিন');return}if(!current)return;const arr=read();const id='RG'+Date.now().toString().slice(-8);arr.push({id,package:current.package,price:current.price,uid,method,trx,status:'Pending',createdAt:new Date().toISOString()});save(arr);window.RG&&RG.sendOrder(arr[arr.length-1]);$('rgPayModal').classList.remove('show');render();location.hash='my-orders';alert('অর্ডার জমা হয়েছে। Status: Pending');};
+ $('rgSubmit').onclick=()=>{const ex=current&&current.fields;const uid=ex?String(current.uid||'-'):$('rgUid').value.trim(),trx=$('rgTrx').value.trim();if(!ex&&uid.length<6){alert('সঠিক Player UID দিন');return}if(trx.length<5){alert('সঠিক Transaction ID দিন');return}if(!current)return;const arr=read();const id='RG'+Date.now().toString().slice(-8);arr.push({id,package:current.package,price:current.price,uid,fields:ex||undefined,method,trx,status:'Pending',createdAt:new Date().toISOString()});save(arr);window.RG&&RG.sendOrder(arr[arr.length-1]);$('rgPayModal').classList.remove('show');render();location.hash='my-orders';alert('অর্ডার জমা হয়েছে। Status: Pending');};
  document.addEventListener('DOMContentLoaded',render);window.addEventListener('hashchange',render);setTimeout(render,500);
 })();
 </script>
@@ -3352,18 +3356,31 @@ setInterval(fetchFreshAccountConfig, 15000);
 // ==========================================
 (function(){
   var home=document.getElementById('homeView'), foot=document.getElementById('siteFooter'), cx=document.getElementById('cxView');
-  var grid=document.getElementById('cxPkGrid'), inp=document.getElementById('cxInp'), need=document.getElementById('cxNeed');
+  var grid=document.getElementById('cxPkGrid'), fbox=document.getElementById('cxFields'), need=document.getElementById('cxNeed');
   var DEF_RULES=['সঠিক আইডি দিয়ে অর্ডার করুন। ভুল আইডিতে টপআপ হয়ে গেলে কর্তৃপক্ষ দায়ী থাকবে না।','অর্ডার করার আগে আইডি ভালো করে চেক করে নিন।','টপআপ সম্পন্ন হতে সাধারণত ২ সেকেন্ড থেকে কয়েক মিনিট সময় লাগতে পারে।','একবার অর্ডার সাবমিট করার পর বাতিল বা রিফান্ড করা হয় না।','যেকোনো সমস্যায় অর্ডারের স্ক্রিনশট সহ যোগাযোগ করুন।'];
   var curId=null;
+  function fieldsOf(c){
+    if(Array.isArray(c.fields)&&c.fields.length)return c.fields.filter(Boolean);
+    return [{l:c.label||'এখানে গেমের আইডি কোড দিন',t:c.num===0?'text':'number',r:1}];
+  }
   function fill(c){
     if(curId===c.id&&cx.dataset.sig===JSON.stringify(c))return;
     curId=c.id;cx.dataset.sig=JSON.stringify(c);
     document.getElementById('cxImg').src=c.img||RG.placeholder(c.name);
     document.getElementById('cxTitle').textContent=c.name||'';
     document.getElementById('cxTag').textContent=c.tag||'২ সেকেন্ডে টপআপ';
-    var lb=c.label||'এখানে গেমের আইডি কোড দিন';
-    document.getElementById('cxLbl').textContent=lb;inp.placeholder=lb;inp.value='';
-    inp.setAttribute('inputmode',c.num===0?'text':'numeric');
+    fbox.innerHTML='';
+    fieldsOf(c).forEach(function(f,i){
+      var w=document.createElement('div');w.className='cx-f';
+      var lb=document.createElement('label');lb.className='lbl';lb.htmlFor='cxF'+i;lb.appendChild(document.createTextNode(f.l||''));
+      if(f.r){var st=document.createElement('i');st.textContent='*';lb.appendChild(st)}
+      var ip=document.createElement('input');ip.className='inp';ip.id='cxF'+i;ip.autocomplete='off';ip.placeholder=f.p||('Enter '+(f.l||''));
+      ip.dataset.t=f.t||'text';
+      if(f.t==='password'){ip.type='password';ip.autocomplete='new-password'}
+      else{ip.type='text';if(f.t==='number')ip.setAttribute('inputmode','numeric')}
+      ip.addEventListener('input',function(){if(ip.dataset.t==='number')ip.value=ip.value.replace(/\D/g,'')});
+      w.appendChild(lb);w.appendChild(ip);fbox.appendChild(w);
+    });
     grid.innerHTML='';need.textContent='0';
     (c.packages||[]).forEach(function(p){
       var b=document.createElement('button');b.type='button';b.className='pk';
@@ -3394,7 +3411,20 @@ setInterval(fetchFreshAccountConfig, 15000);
   [].slice.call(document.querySelectorAll('#cxPo .po')).forEach(function(b){
     b.onclick=function(){[].slice.call(document.querySelectorAll('#cxPo .po')).forEach(function(x){x.classList.remove('on')});b.classList.add('on')};
   });
-  inp.addEventListener('input',function(){if(inp.getAttribute('inputmode')==='numeric')this.value=this.value.replace(/\D/g,'')});
+  document.getElementById('cxGo').addEventListener('click',function(e){
+    e.preventDefault();
+    var c=RG.findCard(decodeURIComponent((/^#c-(.+)$/.exec(location.hash)||[])[1]||''));if(!c)return;
+    var chosen=grid.querySelector('.pk.on');
+    if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return}
+    var fs=fieldsOf(c),vals=[];
+    for(var i=0;i<fs.length;i++){
+      var ip=document.getElementById('cxF'+i),v=ip?ip.value.trim():'';
+      if(fs[i].r&&!v){alert('"'+fs[i].l+'" দিন');if(ip)ip.focus();return}
+      vals.push({l:fs[i].l||'',v:v,t:fs[i].t||'text'});
+    }
+    var first=vals.filter(function(x){return x.v})[0];
+    window.rgOpenPay({package:chosen.dataset.name,price:+chosen.dataset.price||0,fields:vals,uid:first?first.v:'-'});
+  });
   document.getElementById('cxBack').onclick=function(){if(history.length>1&&/^#c-/.test(location.hash)){history.back()}else{location.hash=''}};
   window.addEventListener('hashchange',r);
   r();
@@ -3468,6 +3498,10 @@ textarea.ad-search{resize:vertical}
 .ad-cr img{width:52px;height:52px;object-fit:cover;border-radius:11px;background:#eef2f8;border:1px solid #e1e8f5}
 .ad-ed{margin-top:12px;padding-top:12px;border-top:1px dashed #d8e0ec}
 select.ad-search{appearance:auto}
+.ad-ff{border:1px solid #e1e8f5;border-radius:12px;padding:10px;margin-bottom:8px;background:#fff}
+.ad-ffr{display:flex;gap:8px;align-items:center;margin-top:6px}
+.ad-ffr select{flex:1;padding:10px}
+.ad-req{display:flex;gap:5px;align-items:center;font-size:13px;font-weight:700;white-space:nowrap}
 .ad-pre{background:#0f172a;color:#e2e8f0;border-radius:12px;padding:12px;font-size:12.5px;overflow:auto;margin:10px 0;white-space:pre}
 </style>
 <div id="adRoot" hidden></div>
@@ -3498,6 +3532,7 @@ select.ad-search{appearance:auto}
   function errMsg(e){
     var c=e&&e.status;
     if(c===401||c===403)return 'Firebase Rules-এ অনুমতি নেই — সেটিংস ট্যাবের নির্দেশনা দেখুন';
+    if(c)return 'সেভ হয়নি (কোড '+c+') — ছবি ছোট করুন বা ছবির লিংক দিন';
     return 'ডাটাবেসের সাথে সংযোগ হয়নি — ইন্টারনেট চেক করুন';
   }
   function toArr(obj){
@@ -3510,12 +3545,12 @@ select.ad-search{appearance:auto}
   function loadAll(){
     return Promise.all([RG.fb('GET','orders'),RG.fb('GET','site/cfg'),RG.fb('GET','admin/hash')]).then(function(a){
       if(a[2]&&a[2]!==localStorage.getItem(AUTH)){logout();toast('পাসওয়ার্ড বদলেছে — আবার লগইন করুন');return}
-      S.orders=toArr(a[0]);S.cfg=a[1]||{};if(!S.homeDirty)S.home=null;S.sig=sig();S.err=null;
+      S.orders=toArr(a[0]);S.cfg=RG.decCfg(a[1]||{});if(!S.homeDirty)S.home=null;S.sig=sig();S.err=null;
     }).catch(function(e){S.err=e});
   }
   function saveCfg(msg){
     S.cfg.v=Date.now();
-    return RG.fb('PATCH','site',{cfg:S.cfg,v:S.cfg.v}).then(function(){
+    return RG.fb('PATCH','site',{cfg:RG.encCfg(S.cfg),v:S.cfg.v}).then(function(){
       try{localStorage.setItem(RG.key,JSON.stringify(S.cfg))}catch(e){}
       RG.cfg=S.cfg;RG.applyAll(S.cfg,false);S.err=null;toast(msg||'সেভ হয়েছে ✓');return true;
     }).catch(function(e){toast(errMsg(e));return false});
@@ -3572,7 +3607,7 @@ select.ad-search{appearance:auto}
       +(list.length?list.map(function(x){
         return '<div class="ad-card"><div class="ad-ord-h"><b>Order #'+esc(x.id)+'</b><span class="ad-st '+esc(x.status)+'">'+esc(x.status)+'</span></div>'
         +'<div class="ad-row"><span>Package</span><b>'+esc(x.package)+'</b></div><div class="ad-row"><span>Price</span><b>'+money(x.price)+'</b></div>'
-        +'<div class="ad-row"><span>Player UID</span><b>'+esc(x.uid)+'</b></div><div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
+        +(x.fields&&x.fields.length?x.fields.map(function(f){return '<div class="ad-row"><span>'+esc(f.l)+'</span><b data-copy="'+esc(f.v)+'" style="cursor:pointer">'+esc(f.v||'-')+'</b></div>'}).join(''):'<div class="ad-row"><span>Player UID</span><b>'+esc(x.uid)+'</b></div>')+'<div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
         +'<div class="ad-row"><span>তারিখ</span><b>'+fmt(x.createdAt)+'</b></div><div class="ad-acts">'
         +(x.status!=='Completed'?'<button class="ad-btn ok" data-act="Completed" data-id="'+esc(x.id)+'">✓ Complete</button>':'')
         +(x.status!=='Cancelled'?'<button class="ad-btn no" data-act="Cancelled" data-id="'+esc(x.id)+'">✕ Cancel</button>':'')
@@ -3643,7 +3678,7 @@ select.ad-search{appearance:auto}
       var h=(S.cfg.home&&Array.isArray(S.cfg.home.sections)&&S.cfg.home.sections.length)?S.cfg.home:RG.defaultHome();
       S.home=JSON.parse(JSON.stringify(h));
     }
-    S.home.sections.forEach(function(s){s.cards=Array.isArray(s.cards)?s.cards.filter(Boolean):[];s.cards.forEach(function(c){if(!c.b)c.packages=Array.isArray(c.packages)?c.packages.filter(Boolean):[]})});
+    S.home.sections.forEach(function(s){s.cards=Array.isArray(s.cards)?s.cards.filter(Boolean):[];s.cards.forEach(function(c){if(c.b)return;c.packages=Array.isArray(c.packages)?c.packages.filter(Boolean):[];c.fields=Array.isArray(c.fields)&&c.fields.length?c.fields.filter(Boolean):[{l:c.label||'এখানে গেমের আইডি কোড দিন',t:c.num===0?'text':'number',r:1}]})});
     return S.home;
   }
   function cardImg(c){
@@ -3671,8 +3706,9 @@ select.ad-search{appearance:auto}
               +'<div class="ad-acts"><button class="ad-btn '+(c.hidden?'ok':'wa')+'" data-chide="'+esc(c.id)+'">'+(c.hidden?'👁 হোমে দেখান':'🚫 হোম থেকে লুকান')+'</button></div>';
           }else{
             h+='<label class="ad-field">সাবটাইটেল (নামের নিচের ব্যাজ)</label><input class="ad-search" data-cf="tag" data-cid="'+esc(c.id)+'" value="'+esc(c.tag||'')+'" placeholder="২ সেকেন্ডে টপআপ">'
-              +'<label class="ad-field">ইনপুট বক্সের লেখা (কাস্টমার কী দেবে)</label><input class="ad-search" data-cf="label" data-cid="'+esc(c.id)+'" value="'+esc(c.label||'')+'" placeholder="এখানে গেমের আইডি কোড দিন">'
-              +'<label style="display:flex;gap:8px;align-items:center;margin:10px 0;font-size:13px;font-weight:700"><input type="checkbox" data-cnum="'+esc(c.id)+'"'+(c.num===0?'':' checked')+'> শুধু সংখ্যা নেওয়া যাবে (আইডি/নম্বরের জন্য)</label>'
+              +'<label class="ad-field">ফর্মের ঘর (কাস্টমারের কাছ থেকে যা যা নেবেন)</label><p class="ad-note" style="margin-bottom:8px">যেমন: Facebook ID / Number (আবশ্যক), Password (আবশ্যক), Backup Code / WhatsApp Number (ঐচ্ছিক)</p>'
+              +c.fields.map(function(f,i){var ci=esc(c.id);return '<div class="ad-ff"><input class="ad-search" data-ff="l" data-cid="'+ci+'" data-i="'+i+'" value="'+esc(f.l)+'" placeholder="ঘরের নাম, যেমন Your Facebook ID / Number"><input class="ad-search" data-ff="p" data-cid="'+ci+'" data-i="'+i+'" value="'+esc(f.p||'')+'" placeholder="ভেতরের লেখা (ফাঁকা রাখলে Enter + নাম বসবে)" style="margin-top:6px"><div class="ad-ffr"><select class="ad-search" data-ff="t" data-cid="'+ci+'" data-i="'+i+'"><option value="text"'+(f.t==='text'?' selected':'')+'>লেখা</option><option value="number"'+(f.t==='number'?' selected':'')+'>শুধু সংখ্যা</option><option value="password"'+(f.t==='password'?' selected':'')+'>পাসওয়ার্ড (••••)</option></select><label class="ad-req"><input type="checkbox" data-ff="r" data-cid="'+ci+'" data-i="'+i+'"'+(f.r?' checked':'')+'> আবশ্যক *</label><button class="ad-btn no" data-ffdel="'+ci+'" data-i="'+i+'">✕</button></div></div>'}).join('')
+              +'<div class="ad-acts"><button class="ad-btn" data-ffadd="'+esc(c.id)+'">＋ নতুন ঘর</button></div>'
               +'<label class="ad-field">সেকশন</label><select class="ad-search" data-csec="'+esc(c.id)+'">'+H.sections.map(function(x,k){return '<option value="'+k+'"'+(x===s?' selected':'')+'>'+esc(x.title||('সেকশন '+(k+1)))+'</option>'}).join('')+'</select>'
               +'<label class="ad-field">প্যাকেজ ও দাম</label><div class="ad-pkh"><span>প্যাকেজের নাম</span><span>দাম ৳</span><span></span></div>'
               +c.packages.map(function(p,i){return '<div class="ad-pk"><input class="ad-search" data-cp="d" data-cid="'+esc(c.id)+'" data-i="'+i+'" value="'+esc(p.d)+'" placeholder="যেমন 100 Diamond"><input class="ad-search" data-cp="p" data-cid="'+esc(c.id)+'" data-i="'+i+'" inputmode="decimal" value="'+esc(p.p)+'"><button class="ad-btn no" data-cpdel="'+esc(c.id)+'" data-i="'+i+'">✕</button></div>'}).join('')
@@ -3707,14 +3743,16 @@ select.ad-search{appearance:auto}
     all('[data-cmv]',function(b){b.onclick=function(){var l=loc(b.dataset.cmv);if(!l)return;var t=l.i+(+b.dataset.d);if(t<0||t>=l.arr.length)return;var x=l.arr[l.i];l.arr[l.i]=l.arr[t];l.arr[t]=x;dirty();render()}});
     all('[data-cedit]',function(b){b.onclick=function(){S.openCard=S.openCard===b.dataset.cedit?null:b.dataset.cedit;render()}});
     all('[data-cadd]',function(b){b.onclick=function(){
-      var c={id:'k'+uid6(),name:'নতুন কার্ড',img:'',tag:'২ সেকেন্ডে টপআপ',label:'এখানে গেমের আইডি কোড দিন',num:1,rules:'',packages:[{d:'প্যাকেজ ১',p:0}]};
+      var c={id:'k'+uid6(),name:'নতুন কার্ড',img:'',tag:'২ সেকেন্ডে টপআপ',fields:[{l:'Your Player ID',t:'number',r:1}],rules:'',packages:[{d:'প্যাকেজ ১',p:0}]};
       H.sections[+b.dataset.cadd].cards.push(c);S.openCard=c.id;dirty();render();toast('নতুন কার্ড যোগ হয়েছে — নাম, ছবি ও দাম দিন');
     }});
     all('[data-chide]',function(b){b.onclick=function(){var l=loc(b.dataset.chide);if(l){l.c.hidden=!l.c.hidden;dirty();render()}}});
     all('[data-cdel]',function(b){b.onclick=function(){var l=loc(b.dataset.cdel);if(!l)return;if(!confirm('"'+l.c.name+'" কার্ডটি মুছে ফেলবেন?'))return;l.arr.splice(l.i,1);S.openCard=null;dirty();render()}});
     all('[data-csec]',function(sel){sel.onchange=function(){var l=loc(sel.dataset.csec);if(!l)return;var to=+sel.value;if(to===l.s)return;l.arr.splice(l.i,1);H.sections[to].cards.push(l.c);dirty();render()}});
     all('[data-cf]',function(i){i.oninput=function(){var l=loc(i.dataset.cid);if(l){l.c[i.dataset.cf]=i.value;dirty()}}});
-    all('[data-cnum]',function(i){i.onchange=function(){var l=loc(i.dataset.cnum);if(l){l.c.num=i.checked?1:0;dirty()}}});
+    all('[data-ff]',function(i){var h=function(){var l=loc(i.dataset.cid);if(!l)return;var f=l.c.fields[+i.dataset.i];if(!f)return;var k=i.dataset.ff;f[k]=k==='r'?(i.checked?1:0):i.value;dirty()};if(i.type==='checkbox'||i.tagName==='SELECT')i.onchange=h;else i.oninput=h});
+    all('[data-ffdel]',function(b){b.onclick=function(){var l=loc(b.dataset.ffdel);if(!l)return;if(l.c.fields.length<2)return toast('কমপক্ষে একটি ঘর থাকতে হবে');l.c.fields.splice(+b.dataset.i,1);dirty();render()}});
+    all('[data-ffadd]',function(b){b.onclick=function(){var l=loc(b.dataset.ffadd);if(!l)return;l.c.fields.push({l:'নতুন ঘর',t:'text',r:0});dirty();render()}});
     all('[data-cp]',function(i){i.oninput=function(){var l=loc(i.dataset.cid);if(!l)return;var p=l.c.packages[+i.dataset.i];if(!p)return;if(i.dataset.cp==='d')p.d=i.value;else p.p=Math.max(0,Math.round(+i.value||0));dirty()}});
     all('[data-cpdel]',function(b){b.onclick=function(){var l=loc(b.dataset.cpdel);if(!l)return;if(l.c.packages.length<2)return toast('কমপক্ষে একটি প্যাকেজ থাকতে হবে');l.c.packages.splice(+b.dataset.i,1);dirty();render()}});
     all('[data-cpadd]',function(b){b.onclick=function(){var l=loc(b.dataset.cpadd);if(!l)return;l.c.packages.push({d:'নতুন প্যাকেজ',p:0});dirty();render()}});
@@ -3746,6 +3784,8 @@ select.ad-search{appearance:auto}
           var c=s.cards[b];
           if(!String(c.name).trim())return toast('কার্ডের নাম ফাঁকা রাখা যাবে না');
           if(!c.b){
+            if(!c.fields.length)return toast('"'+c.name+'" কার্ডে কমপক্ষে একটি ঘর দিন');
+            for(var q=0;q<c.fields.length;q++){if(!String(c.fields[q].l).trim())return toast('"'+c.name+'" কার্ডের ঘরের নাম ফাঁকা')}
             if(!c.packages.length)return toast('"'+c.name+'" কার্ডে কমপক্ষে একটি প্যাকেজ দিন');
             for(var k=0;k<c.packages.length;k++){
               if(!String(c.packages[k].d).trim())return toast('"'+c.name+'" কার্ডের প্যাকেজের নাম ফাঁকা');
@@ -3855,7 +3895,16 @@ select.ad-search{appearance:auto}
       };
     }
     if(S.tab==='img'){
-      function setImg(key,url){S.cfg.images=S.cfg.images||{};S.cfg.images[key]=url;return saveCfg('ছবি বদলে গেছে ✓').then(render)}
+      function setImg(key,url){
+        return new Promise(function(ok){var t=new Image();t.onload=function(){ok(true)};t.onerror=function(){ok(false)};t.src=url}).then(function(good){
+          if(!good){toast('এই ছবি লোড হচ্ছে না — সরাসরি ছবির লিংক দিন (যেটা .jpg/.png দিয়ে শেষ)');return}
+          S.cfg.images=S.cfg.images||{};S.cfg.images[key]=url;S.dirty=true;
+          return saveCfg('ছবি বদলে গেছে ✓').then(function(ok){
+            if(!ok)return;
+            return RG.fb('GET','site/cfg').then(function(c){c=RG.decCfg(c||{});if(!c.images||c.images[key]!==url)toast('⚠ ডাটাবেসে ছবি সেভ হয়নি — আবার চেষ্টা করুন')}).catch(function(){});
+          }).then(render);
+        });
+      }
       root.querySelectorAll('[data-up]').forEach(function(b){b.onclick=function(){pendingImg=b.dataset.up;var f=$('#adImgFile');f.value='';f.click()}});
       root.querySelectorAll('[data-url]').forEach(function(b){b.onclick=function(){
         var u=prompt('ছবির লিংক বসান (https://...)','');if(!u)return;u=u.trim();
