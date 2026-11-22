@@ -1727,8 +1727,9 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     for(var a=0;a<h.sections.length;a++){var cs=h.sections[a].cards||[];for(var i=0;i<cs.length;i++)if(cs[i]&&cs[i].id===id&&!cs[i].b)return cs[i]}
     return null;
   };
+  RG.fixTitles=function(h){if(h&&Array.isArray(h.sections))h.sections.forEach(function(s){if(s&&String(s.title||'').trim().toUpperCase()==='UID CHECKER')s.title='SPECIAL OFFERS & TOPUP'})};
   RG.applyCards=function(c){
-    var h=(c||RG.cfg).home, root=document.getElementById('homeCards');
+    var h=(c||RG.cfg).home, root=document.getElementById('homeCards');RG.fixTitles(h);
     if(!root||!h||!Array.isArray(h.sections)||!h.sections.length)return;
     var im=(c||RG.cfg).images||{};
     var sig=JSON.stringify(h);
@@ -3676,7 +3677,7 @@ select.ad-search{appearance:auto}
   function homeData(){
     if(!S.home){
       var h=(S.cfg.home&&Array.isArray(S.cfg.home.sections)&&S.cfg.home.sections.length)?S.cfg.home:RG.defaultHome();
-      S.home=JSON.parse(JSON.stringify(h));
+      S.home=JSON.parse(JSON.stringify(h));RG.fixTitles(S.home);
     }
     S.home.sections.forEach(function(s){s.cards=Array.isArray(s.cards)?s.cards.filter(Boolean):[];s.cards.forEach(function(c){if(c.b)return;c.packages=Array.isArray(c.packages)?c.packages.filter(Boolean):[];c.fields=Array.isArray(c.fields)&&c.fields.length?c.fields.filter(Boolean):[{l:c.label||'এখানে গেমের আইডি কোড দিন',t:c.num===0?'text':'number',r:1}]})});
     return S.home;
