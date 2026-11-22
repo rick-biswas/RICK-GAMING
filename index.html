@@ -3170,6 +3170,7 @@ setInterval(fetchFreshAccountConfig, 15000);
 <style>
 /* RICK-GAMING manual payment + orders add-on */
 .rg-modal{position:fixed;inset:0;z-index:9999;background:rgba(8,18,40,.62);display:none;align-items:flex-end;justify-content:center;padding:14px}.rg-modal.show{display:flex}.rg-sheet{width:min(560px,100%);max-height:92vh;overflow:auto;background:#fff;border-radius:24px;padding:20px;box-shadow:0 20px 60px #0003}.rg-sheet h2{font-size:21px;font-weight:850;margin-bottom:8px}.rg-muted{color:#64748b;font-size:13px;line-height:1.6}.rg-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:15px 0}.rg-method{border:1.5px solid #dbe3ef;border-radius:15px;padding:13px;text-align:center;font-weight:800;background:#fff;color:#172554}.rg-method.active{border-color:#2563eb;background:#eff6ff}.rg-field{display:block;margin:12px 0 6px;font-size:13px;font-weight:750}.rg-input{width:100%;border:1px solid #d8e0ec;border-radius:12px;padding:13px;font:inherit;outline:none}.rg-copy{border:0;border-radius:12px;background:#eaf2ff;color:#1d4ed8;padding:10px 13px;font-weight:800}.rg-primary{width:100%;border:0;border-radius:13px;background:linear-gradient(135deg,#1687ef,#1458ce);color:#fff;padding:14px;font:inherit;font-weight:850;margin-top:12px}.rg-secondary{width:100%;border:1px solid #dbe3ef;border-radius:13px;background:#fff;color:#334155;padding:12px;font:inherit;font-weight:750;margin-top:8px}.rg-order-admin{margin-top:9px;border:0;background:#e8f7ee;color:#087443;border-radius:10px;padding:9px 12px;font-weight:800}.rg-order-admin:disabled{opacity:.5}
+.or-row.or-pid{flex-wrap:wrap}.or-row.or-pid .pid{margin-left:4px;text-align:left}.or-row.or-pid .pnm{margin-left:auto;text-align:right;max-width:100%}.or-row.or-pid .pnm:empty{display:none}
 </style>
 <div class="rg-modal" id="rgPayModal" aria-modal="true" role="dialog">
  <div class="rg-sheet">
@@ -3189,7 +3190,27 @@ setInterval(fetchFreshAccountConfig, 15000);
  function read(){try{return JSON.parse(localStorage.getItem(KEY)||'[]')}catch(e){return []}}
  function save(a){localStorage.setItem(KEY,JSON.stringify(a));}
  function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
- function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row"><span>Player ID</span><b>${esc(o.uid)}</b></div><div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});}
+ /* প্লেয়ারের নাম: UID দিয়ে নাম এনে অর্ডারের সাথে সেভ করে (একবার আনা নাম মনে রাখে) */
+ const NK='rgNameCacheV1',tried={},pending={};
+ function nameCache(){try{return JSON.parse(localStorage.getItem(NK)||'{}')}catch(e){return {}}}
+ function lookupName(uid){
+  const c=nameCache();if(c[uid])return Promise.resolve(c[uid]);
+  if(pending[uid])return pending[uid];
+  const ctrl=typeof AbortController!=='undefined'?new AbortController():null;const to=setTimeout(()=>{if(ctrl)ctrl.abort()},60000);
+  pending[uid]=fetch('https://auraffxserverinfocheckerapi.onrender.com/api/player?uid='+encodeURIComponent(uid),{cache:'no-store',signal:ctrl?ctrl.signal:undefined})
+   .then(r=>{if(!r.ok)throw 0;return r.json()})
+   .then(d=>{let n=d&&(d.name||(d.player&&d.player.name)||(d.raw&&d.raw.name))||'';n=String(n).trim();if(!n||n==='None'||n==='null')n='';if(n){try{c[uid]=n;localStorage.setItem(NK,JSON.stringify(c))}catch(e){}}return n})
+   .catch(()=>'').then(n=>{clearTimeout(to);delete pending[uid];return n});
+  return pending[uid];
+ }
+ function attachName(id,uid){
+  lookupName(uid).then(n=>{
+   if(!n){render();return}
+   const a=read(),o=a.find(x=>x.id===id);if(!o)return;o.name=n;save(a);render();
+   if(window.RG&&RG.fb)RG.fb('PATCH','orders/'+encodeURIComponent(id),{name:n}).catch(()=>{});
+  });
+ }
+ function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!tried[o.id]||pending[o.uid])?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>Player ID</span><b class="pid">${esc(o.uid)}</b><b class="pnm">${nm}</b></div><div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
  window.renderOrders=render;
  document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"],#buyBtn');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"],#uid');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
  document.querySelectorAll('[data-rg-method]').forEach(b=>b.addEventListener('click',()=>{method=b.dataset.rgMethod;document.querySelectorAll('[data-rg-method]').forEach(x=>x.classList.toggle('active',x===b));}));
