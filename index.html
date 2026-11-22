@@ -3341,7 +3341,7 @@ setInterval(fetchFreshAccountConfig, 15000);
    if(window.RG&&RG.fb)RG.fb('PATCH','orders/'+encodeURIComponent(id),{name:n}).catch(()=>{});
   });
  }
- function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!o.fields&&(!tried[o.id]||pending[o.uid]))?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>${o.fields&&o.fields[0]?esc(o.fields[0].l):'Player ID'}</span><b class="pid">${o.fields&&o.fields[0]&&o.fields[0].t==='password'?'••••••':esc(o.uid)}</b><b class="pnm">${nm}</b></div>${(o.fields||[]).slice(1).map(f=>`<div class="or-row"><span>${esc(f.l)}</span><b>${f.t==='password'?'••••••':esc(f.v||'-')}</b></div>`).join('')}<div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>${o.note?`<div class="or-note"><b>💬 এডমিনের মেসেজ</b><p>${esc(o.note)}</p></div>`:''}`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!o.fields&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
+ function render(){const list=$('orList'),empty=$('orEmpty');if(!list||!empty)return;const arr=read().slice().reverse();list.innerHTML='';empty.style.display=arr.length?'none':'flex';arr.forEach(o=>{const d=new Date(o.createdAt),date=d.toLocaleDateString('en-GB'),time=d.toLocaleTimeString('en-US');const el=document.createElement('article');el.className='or-card';const cls=o.status==='Pending'?'pending':(o.status==='Cancelled'?'cancelled':'');const nm=o.name?esc(o.name):((!o.fields&&(!tried[o.id]||pending[o.uid]))?'…':'');el.innerHTML=`<div class="or-hd"><span class="or-ico">▣</span><div class="or-id">Order #${esc(o.id)}</div><span class="or-st ${cls}">${esc(o.status)}</span></div><div class="or-dates"><div class="or-dt"><span class="di">▦</span><div><small>Order Date</small><b>${date}</b><span>${time}</span></div></div><div class="or-dt"><span class="di">↻</span><div><small>Updated</small><b>${esc(o.updatedDate||date)}</b><span>${esc(o.updatedTime||time)}</span></div></div></div><div class="or-rows"><div class="or-row"><span>Package</span><b>${esc(o.package)}</b></div><div class="or-row"><span>Total Price</span><b>৳${Number(o.price).toFixed(2)}</b></div><div class="or-row or-pid"><span>${o.fields&&o.fields[0]?esc(o.fields[0].l):'Player ID'}</span><b class="pid">${o.fields&&o.fields[0]&&o.fields[0].t==='password'?'••••••':esc(o.uid)}</b><b class="pnm">${nm}</b></div>${(o.fields||[]).slice(1).map(f=>`<div class="or-row"><span>${esc(f.l)}</span><b>${f.t==='password'?'••••••':esc(f.v||'-')}</b></div>`).join('')}<div class="or-row"><span>Payment</span><b>${esc(o.method)} · ${esc(o.trx)}</b></div></div>${o.note?`<div class="or-note"><b>RICK-GAMING</b><p>${esc(o.note)}</p></div>`:''}`;list.appendChild(el)});arr.slice(0,10).forEach(o=>{if(!o.name&&o.uid&&!o.fields&&!tried[o.id]){tried[o.id]=1;attachName(o.id,o.uid)}});}
  window.renderOrders=render;
  window.rgOpenPay=function(o){current={package:o.package,price:o.price,viewId:'cxView',fields:o.fields,uid:o.uid};$('rgSummary').textContent=o.package+' — ৳'+o.price;$('rgUid').style.display='none';var lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='none';$('rgTrx').value='';$('rgPayModal').classList.add('show');};
  document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"],#buyBtn');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"],#uid');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgUid').style.display='';{const lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='';}$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
@@ -3611,7 +3611,7 @@ select.ad-search{appearance:auto}
       +(list.length?list.map(function(x){
         return '<div class="ad-card"><div class="ad-ord-h"><b>Order #'+esc(x.id)+'</b><span class="ad-st '+esc(x.status)+'">'+esc(x.status)+'</span></div>'
         +'<div class="ad-row"><span>Package</span><b>'+esc(x.package)+'</b></div><div class="ad-row"><span>Price</span><b>'+money(x.price)+'</b></div>'
-        +(x.fields&&x.fields.length?x.fields.map(function(f){return '<div class="ad-row"><span>'+esc(f.l)+'</span><b data-copy="'+esc(f.v)+'" style="cursor:pointer">'+esc(f.v||'-')+'</b></div>'}).join(''):'<div class="ad-row"><span>Player UID</span><b>'+esc(x.uid)+'</b></div>')+'<div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
+        +(x.fields&&x.fields.length?x.fields.map(function(f){return '<div class="ad-row"><span>'+esc(f.l)+'</span><b data-copy="'+esc(f.v)+'" style="cursor:pointer">'+esc(f.v||'-')+'</b></div>'}).join(''):'<div class="ad-row"><span>Player UID</span><b class="ad-pn" data-pn="'+esc(x.id)+'" data-uid="'+esc(x.uid)+'" style="flex:1;text-align:center;color:#2563eb;word-break:break-word">'+(x.name?esc(x.name):'…')+'</b><b>'+esc(x.uid)+'</b></div>')+'<div class="ad-row"><span>'+esc(x.method)+' TrxID</span><b>'+esc(x.trx)+'</b></div>'
         +'<div class="ad-row"><span>তারিখ</span><b>'+fmt(x.createdAt)+'</b></div><div class="ad-note"><label class="ad-field" style="display:block;margin:12px 0 6px;font-weight:800;font-size:13px">💬 কাস্টমারকে মেসেজ / কারণ (অর্ডার পেজে দেখাবে)</label><textarea class="ad-search" rows="2" data-note="'+esc(x.id)+'" placeholder="যেমন: টাকা পাইনি / ভুল UID / পরে চেষ্টা করুন…">'+esc(S.draft&&S.draft[x.id]!==undefined?S.draft[x.id]:(x.note||''))+'</textarea><button class="ad-btn pri" style="margin-top:8px" data-notesave="'+esc(x.id)+'">💾 মেসেজ সেভ</button></div><div class="ad-acts">'
         +(x.status!=='Completed'?'<button class="ad-btn ok" data-act="Completed" data-id="'+esc(x.id)+'">✓ Complete</button>':'')
         +(x.status!=='Cancelled'?'<button class="ad-btn no" data-act="Cancelled" data-id="'+esc(x.id)+'">✕ Cancel</button>':'')
@@ -3863,11 +3863,39 @@ select.ad-search{appearance:auto}
     return loadAll().then(function(){if(!quiet)toast(S.err?errMsg(S.err):'রিফ্রেশ হয়েছে');render()});
   }
 
+  /* অ্যাডমিন: UID দিয়ে প্লেয়ারের নাম এনে অর্ডারে দেখায় ও ডাটাবেসে সেভ করে */
+  var adNP={};
+  function adLookup(uid){
+    var NK='rgNameCacheV1',c={};try{c=JSON.parse(localStorage.getItem(NK)||'{}')}catch(e){}
+    if(c[uid])return Promise.resolve(c[uid]);
+    if(adNP[uid])return adNP[uid];
+    var ctrl=typeof AbortController!=='undefined'?new AbortController():null,to=setTimeout(function(){if(ctrl)ctrl.abort()},60000);
+    adNP[uid]=fetch('https://auraffxserverinfocheckerapi.onrender.com/api/player?uid='+encodeURIComponent(uid),{cache:'no-store',signal:ctrl?ctrl.signal:undefined})
+      .then(function(r){if(!r.ok)throw 0;return r.json()})
+      .then(function(d){var n=d&&(d.name||(d.player&&d.player.name)||(d.raw&&d.raw.name))||'';n=String(n).trim();if(!n||n==='None'||n==='null')n='';if(n){try{c[uid]=n;localStorage.setItem(NK,JSON.stringify(c))}catch(e){}}return n})
+      .catch(function(){return ''}).then(function(n){clearTimeout(to);delete adNP[uid];return n});
+    return adNP[uid];
+  }
+  function adFillNames(){
+    root.querySelectorAll('[data-pn]').forEach(function(el){
+      if(el.textContent!=='…')return;
+      var id=el.dataset.pn,uid=el.dataset.uid;
+      if(!uid||uid==='-'){el.textContent='';return}
+      adLookup(uid).then(function(n){
+        if(!n){if(el.textContent==='…')el.textContent='';return}
+        el.textContent=n;
+        var o=S.orders.find(function(x){return x.id===id});
+        if(o&&!o.name){o.name=n;RG.fb('PATCH','orders/'+encodeURIComponent(id),{name:n}).catch(function(){})}
+      });
+    });
+  }
+
   function bind(){
     $('#adSite').onclick=function(){location.hash='';if(S.dirty)location.reload()};
     $('#adOut').onclick=function(){logout();render()};
     $('#adRef').onclick=function(){refresh(false)};
     bindErr();
+    adFillNames();
     root.querySelectorAll('[data-tab]').forEach(function(b){b.onclick=function(){S.tab=b.dataset.tab;render();root.scrollTop=0;
       if(['dash','orders','cust'].indexOf(S.tab)>-1)RG.fb('GET','orders').then(function(j){S.orders=toArr(j);var g=sig();if(g!==S.sig){S.sig=g;render()}}).catch(function(){})}});
     root.querySelectorAll('[data-filter]').forEach(function(b){b.onclick=function(){S.filter=b.dataset.filter;render()}});
