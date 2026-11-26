@@ -109,6 +109,7 @@ html{scroll-behavior:smooth;scrollbar-width:thin;scrollbar-color:#2563eb #f0f5ff
 body{font-family:Inter,"Noto Sans Bengali",Roboto,system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;overflow-x:hidden}
 body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(600px 400px at 90% -5%,rgba(37,99,235,.12),transparent 70%),radial-gradient(500px 500px at -10% 45%,rgba(96,165,250,.14),transparent 70%);-webkit-transform:translateZ(0);transform:translateZ(0);will-change:transform}
 a{color:inherit;text-decoration:none}
+main[hidden],footer[hidden]{display:none!important}
 svg.i{width:1em;height:1em;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 svg.f{width:1em;height:1em;fill:currentColor;stroke:none}
 .wrap{max-width:1000px;margin:0 auto;padding:0 16px}
@@ -867,17 +868,17 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
   <div id="homeCards">
   <div class="sec"><h2><em>FREE FIRE TOPUP</em></h2></div>
   <div class="grid">
-    <a class="card" href="#ff-likes" data-open="ff-likes"><div class="thumb ph"><img src="FF LIKES.jpg" alt="FF Likes" loading="lazy" decoding="async"></div><p>FF Likes</p></a>
-    <a class="card" href="#uid-topup" data-open="uid-topup"><div class="thumb ph"><img src="UID TOPUP (BD).jpg" alt="UID Topup (BD)" loading="lazy" decoding="async"></div><p>UID Topup (BD)</p></a>
-    <a class="card" href="#weekly-monthly" data-open="weekly-monthly"><div class="thumb ph"><img src="WEEKLYMONTHLY.jpg" alt="Weekly/Monthly" loading="lazy" decoding="async"></div><p>Weekly/Monthly</p></a>
-    <a class="card" href="#weekly-lite" data-open="weekly-lite"><div class="thumb ph"><img src="WEEKLY LITE.jpg" alt="Weekly Lite" loading="lazy" decoding="async"></div><p>Weekly Lite</p></a>
-    <a class="card" href="#level-up-pass" data-open="level-up-pass"><div class="thumb ph"><img src="LEVEL UP PASS.jpg" alt="Level Up Pass" loading="lazy" decoding="async"></div><p>Level Up Pass</p></a>
-    <a class="card" href="#indonesia-server" data-open="indonesia-server"><div class="thumb ph"><img src="INDONESIA SERVER.jpg" alt="Indonesia Server" loading="lazy" decoding="async"></div><p>Indonesia Server</p></a>
+    <a class="card" href="#ff-likes" data-open="ff-likes"><div class="thumb ph"><img src="FF LIKES.jpg" alt="FF Likes" decoding="async"></div><p>FF Likes</p></a>
+    <a class="card" href="#uid-topup" data-open="uid-topup"><div class="thumb ph"><img src="UID TOPUP (BD).jpg" alt="UID Topup (BD)" decoding="async"></div><p>UID Topup (BD)</p></a>
+    <a class="card" href="#weekly-monthly" data-open="weekly-monthly"><div class="thumb ph"><img src="WEEKLYMONTHLY.jpg" alt="Weekly/Monthly" decoding="async"></div><p>Weekly/Monthly</p></a>
+    <a class="card" href="#weekly-lite" data-open="weekly-lite"><div class="thumb ph"><img src="WEEKLY LITE.jpg" alt="Weekly Lite" decoding="async"></div><p>Weekly Lite</p></a>
+    <a class="card" href="#level-up-pass" data-open="level-up-pass"><div class="thumb ph"><img src="LEVEL UP PASS.jpg" alt="Level Up Pass" decoding="async"></div><p>Level Up Pass</p></a>
+    <a class="card" href="#indonesia-server" data-open="indonesia-server"><div class="thumb ph"><img src="INDONESIA SERVER.jpg" alt="Indonesia Server" decoding="async"></div><p>Indonesia Server</p></a>
   </div>
 
   <div class="sec"><h2><em>SPECIAL OFFERS &amp; TOPUP</em></h2></div>
   <div class="grid">
-    <a class="card" href="#uid-checker" data-open="uid-checker"><div class="thumb ph"><img src="uid checker.jpg" alt="UID Checker" loading="lazy" decoding="async"></div><p>UID Checker</p></a>
+    <a class="card" href="#uid-checker" data-open="uid-checker"><div class="thumb ph"><img src="uid checker.jpg" alt="UID Checker" decoding="async"></div><p>UID Checker</p></a>
   </div>
   </div>
 
@@ -1754,7 +1755,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
           var bi=cd.b?RG.builtins[cd.id]:null, key=bi?cd.id:'c-'+cd.id, name=cd.name||(bi?bi.name:'');
           var a=document.createElement('a');a.className='card';a.href='#'+key;a.setAttribute('data-open',key);
           var th=document.createElement('div');th.className='thumb ph';
-          var img=document.createElement('img');img.alt=name;img.loading='lazy';img.decoding='async';
+          var img=document.createElement('img');img.alt=name;img.decoding='async';
           if(bi){img.setAttribute('data-o',bi.img);img.src=im[bi.img]||bi.img}else{img.src=cd.img||RG.placeholder(name)}
           th.appendChild(img);a.appendChild(th);
           var p=document.createElement('p');p.textContent=name;a.appendChild(p);
@@ -1780,7 +1781,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
         if(!c||typeof c!=='object')return;RG.decCfg(c);
         try{localStorage.setItem(KEY,JSON.stringify(c))}catch(e){}
         RG.cfg=c;
-        if(RG.applyAll(c,true))location.reload();
+        RG.applyAll(c,false);
       });
     }).catch(function(){});
   };
@@ -2004,7 +2005,7 @@ setInterval(fetchFreshAccountConfig, 15000);
     } else {
       track.style.transition = 'none';
     }
-    track.style.transform = 'translate3d(-' + (index * slideWidth) + 'px, 0, 0)';
+    track.style.transform = 'translate3d(' + (-index * 100) + '%, 0, 0)';
     if (!animated) {
       void track.offsetWidth; // Force synchronous reflow so browser commits silently with zero hitch
     }
@@ -2141,7 +2142,7 @@ setInterval(fetchFreshAccountConfig, 15000);
     if (!dragRafId) {
       dragRafId = requestAnimationFrame(function(){
         if (isDragging) {
-          track.style.transform = 'translate3d(' + (-currentIndex * slideWidth + dragDelta) + 'px, 0, 0)';
+          track.style.transform = 'translate3d(calc(' + (-currentIndex * 100) + '% + ' + dragDelta + 'px), 0, 0)';
         }
         dragRafId = null;
       });
@@ -2219,6 +2220,14 @@ setInterval(fetchFreshAccountConfig, 15000);
   updateSlideWidth();
   setPosition(1, false);
   startAutoPlay();
+
+  // অন্য পেজ থেকে Home-এ ফিরলে স্লাইডার ঠিক করে নেওয়া
+  window.addEventListener('hashchange', function(){
+    setTimeout(function(){
+      if (hero.offsetWidth) { updateSlideWidth(); isAnimating = false; setPosition(currentIndex, false); resetAutoPlay(); }
+      else { stopAutoPlay(); }
+    }, 80);
+  });
 })();
 
 // ==========================================
@@ -2231,11 +2240,17 @@ setInterval(fetchFreshAccountConfig, 15000);
     pop.classList.add('show');
     document.body.style.overflow='hidden';
   }
-  function closeP(){ pop.classList.remove('show'); document.body.style.overflow=''; }
+  function markSeen(){ try{ sessionStorage.setItem('rgPopSeen','1'); }catch(e){} }
+  function closeP(){ pop.classList.remove('show'); document.body.style.overflow=''; markSeen(); }
   document.getElementById('pclose').onclick = closeP;
   pop.addEventListener('click', function(e){ if (e.target === pop) closeP(); });
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeP(); });
-  setTimeout(openP, 500);
+  // পপআপ শুধু হোম পেজে, আর প্রতি সেশনে একবারই দেখাবে (ট্যাব বদলালে বা রিলোড হলে আর আসবে না)
+  var popSeen=false; try{ popSeen = sessionStorage.getItem('rgPopSeen')==='1'; }catch(e){}
+  var atHome=function(){ return location.hash==='' || location.hash==='#'; };
+  if (!popSeen && atHome()) {
+    setTimeout(function(){ if (atHome()) { openP(); markSeen(); } }, 500);
+  }
 
   document.getElementById('fb').onclick = function(){
     if (typeof window.syncAccountLinks === 'function') window.syncAccountLinks();
