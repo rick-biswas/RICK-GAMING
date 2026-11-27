@@ -1702,7 +1702,7 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     if(wa){var wu=/^[+\d\s-]+$/.test(wa)?'https://wa.me/'+wa.replace(/\D/g,'').replace(/^0(?=1\d{9}$)/,'880'):(/^https?:\/\//i.test(wa)?wa:'https://'+wa);
       q('[data-link="whatsapp"]').forEach(function(a){a.href=wu;a.target='_blank';a.rel='noopener noreferrer'})}
     if(s.notice){var el=document.getElementById('popText');if(el){el.textContent='';s.notice.split(/\r?\n/).forEach(function(l,i){if(i)el.appendChild(document.createElement('br'));el.appendChild(document.createTextNode(l))})}}
-    if(s.pay){var n=document.getElementById('rgNumber');if(n)n.textContent=s.pay}
+    if(s.pay&&!window.RG_PAYSET){var n=document.getElementById('rgNumber');if(n)n.textContent=s.pay}
   };
   /* ===== হোম কার্ড সিস্টেম (অ্যাডমিনের "কার্ড" ট্যাব থেকে নিয়ন্ত্রিত) ===== */
   RG.builtins={
@@ -3562,15 +3562,28 @@ select.ad-search{appearance:auto}
   }
   function sig(){return S.orders.length+':'+S.orders.map(function(x){return x.id+x.status+(x.note||'')+(x.name||'')}).join(',')}
 
+  /* কনফিগ (ছবিসহ বড় ডাটা) ব্যাকগ্রাউন্ডে লোড হয়, তাই অ্যাডমিন সাথে সাথে খোলে */
+  function loadCfg(){
+    return RG.fb('GET','site/cfg').then(function(c){
+      S.cfg=RG.decCfg(c||{});var e=RG.encCfg(S.cfg),p={};Object.keys(e).forEach(function(k){p[k]=JSON.stringify(e[k])});S.cfgSent=p;
+      if(!S.homeDirty)S.home=null;S.cfgReady=true;
+      if(!root.hidden&&authed()&&['cards','pk','img','set'].indexOf(S.tab)>-1){var a=document.activeElement;if(!(a&&root.contains(a)&&/INPUT|TEXTAREA/.test(a.tagName)))render()}
+    }).catch(function(e){S.err=e});
+  }
   function loadAll(){
-    return Promise.all([RG.fb('GET','orders'),RG.fb('GET','site/cfg'),RG.fb('GET','admin/hash')]).then(function(a){
-      if(a[2]&&a[2]!==localStorage.getItem(AUTH)){logout();toast('পাসওয়ার্ড বদলেছে — আবার লগইন করুন');return}
-      S.orders=toArr(a[0]);S.cfg=RG.decCfg(a[1]||{});if(!S.homeDirty)S.home=null;S.sig=sig();S.err=null;
+    loadCfg();
+    return Promise.all([RG.fb('GET','orders'),RG.fb('GET','admin/hash')]).then(function(a){
+      if(a[1]&&a[1]!==localStorage.getItem(AUTH)){logout();toast('পাসওয়ার্ড বদলেছে — আবার লগইন করুন');return}
+      S.orders=toArr(a[0]);S.sig=sig();S.err=null;
     }).catch(function(e){S.err=e});
   }
   function saveCfg(msg){
+    if(!S.cfgReady){toast('কনফিগ লোড হচ্ছে, কয়েক সেকেন্ড অপেক্ষা করুন');return Promise.resolve(false)}
     S.cfg.v=Date.now();
-    return RG.fb('PATCH','site',{cfg:RG.encCfg(S.cfg),v:S.cfg.v}).then(function(){
+    var enc=RG.encCfg(S.cfg),prev=S.cfgSent||{},cur={},upd={v:S.cfg.v};
+    Object.keys(enc).forEach(function(k){var j=JSON.stringify(enc[k]);cur[k]=j;if(k==='v'){upd['cfg/v']=enc.v;return}if(prev[k]!==j){upd['cfg/'+k]=enc[k];upd['kv/'+k]=S.cfg.v}});
+    Object.keys(prev).forEach(function(k){if(!(k in cur)){upd['cfg/'+k]=null;upd['kv/'+k]=null}});
+    return RG.fb('PATCH','site',upd).then(function(){S.cfgSent=cur;
       try{localStorage.setItem(RG.key,JSON.stringify(S.cfg))}catch(e){}
       RG.cfg=S.cfg;RG.applyAll(S.cfg,false);S.err=null;toast(msg||'সেভ হয়েছে ✓');return true;
     }).catch(function(e){toast(errMsg(e));return false});
@@ -3690,7 +3703,7 @@ select.ad-search{appearance:auto}
   function settingsView(){
     var c=curSet();
     function f(id,label,v,ph){return '<label class="ad-field" for="adS_'+id+'">'+label+'</label><input class="ad-search" id="adS_'+id+'" value="'+esc(v)+'" placeholder="'+esc(ph||'')+'">'}
-    return '<div class="ad-card"><b>সাইটের তথ্য</b>'+f('siteName','সাইটের নাম',c.siteName)+f('pay','পেমেন্ট নম্বর (bKash/Nagad Send Money)',c.pay)
+    return '<div class="ad-card"><b>সাইটের তথ্য</b>'+f('siteName','সাইটের নাম',c.siteName)+f('pay','পুরনো নম্বর (এখন "পেমেন্ট নম্বর" ট্যাব থেকে বদলান)',c.pay)
       +f('whatsapp','WhatsApp নম্বর বা লিংক (হোমের WhatsApp বাটন)',c.whatsapp,'8801XXXXXXXXX অথবা https://wa.me/...')+f('tgChannel','Telegram চ্যানেল লিংক',c.tgChannel,'https://t.me/...')+f('tgGroup','Telegram গ্রুপ লিংক',c.tgGroup,'https://t.me/...')+f('youtube','YouTube লিংক',c.youtube,'https://youtube.com/...')
       +'<label class="ad-field" for="adS_notice">নোটিফিকেশন পপআপের লেখা</label><textarea class="ad-search" id="adS_notice" rows="4">'+esc(c.notice)+'</textarea>'
       +'<button class="ad-btn pri" id="adSaveSet" style="margin-top:12px">সেভ করুন</button></div>'
@@ -3857,8 +3870,9 @@ select.ad-search{appearance:auto}
     }
     var o=S.orders,pend=o.filter(function(x){return x.status==='Pending'}).length;
     var tabs=[['dash','ড্যাশবোর্ড'],['orders','অর্ডার'+(pend?' ('+pend+')':'')],['dep','ডিপোজিট'+(depPend()?' ('+depPend()+')':'')],['usr','ইউজার'],['pay','পেমেন্ট নম্বর'],['cust','কাস্টমার'],['cards','কার্ড'],['pk','দাম/প্যাকেজ'],['img','ছবি/লোগো'],['set','সেটিংস']];
+    var gate=['cards','pk','img','set'].indexOf(S.tab)>-1&&!S.cfgReady;
     var body={dash:dashView,orders:ordersView,cust:custView}[S.tab];
-    body=body?body(o):S.tab==='pay'?payView():S.tab==='dep'?depView():S.tab==='usr'?usrView():S.tab==='cards'?cardsView():S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
+    body=gate?'<div class="ad-empty">কনফিগ লোড হচ্ছে…</div>':body?body(o):S.tab==='pay'?payView():S.tab==='dep'?depView():S.tab==='usr'?usrView():S.tab==='cards'?cardsView():S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
     var keepQ=document.activeElement&&document.activeElement.id==='adQ';
     var st=root.scrollTop;
     root.innerHTML='<div class="ad-wrap"><div class="ad-top"><div class="ad-ic">A</div><h1>Admin Panel</h1><button class="ad-btn" id="adRef" title="রিফ্রেশ">⟳</button><button class="ad-btn" id="adSite">সাইট</button><button class="ad-btn no" id="adOut">লগআউট</button></div>'
@@ -3912,6 +3926,7 @@ select.ad-search{appearance:auto}
     var q=$('#adQ');if(q)q.oninput=function(){S.q=q.value;render()};
 
     if(['pay','dep','usr'].indexOf(S.tab)>-1)bindX();
+    if(gate)return;
     if(S.tab==='cards')bindCards();
     if(S.tab==='pk'){
       var l=gridList();
@@ -4017,7 +4032,7 @@ select.ad-search{appearance:auto}
     var a=document.activeElement;if(a&&(a.id==='adQ'||(a.dataset&&a.dataset.note!==undefined)))return;
     var before=S.orders.length;
     RG.fb('GET','orders').then(function(j){S.orders=toArr(j);S.err=null;var s=sig();if(s!==S.sig){S.sig=s;if(S.orders.length>before){toast('🔔 নতুন অর্ডার এসেছে!');try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}render()}}).catch(function(){});
-  },10000);
+  },30000);
 
   /* সাইটের নাম/লিংক/নোটিফিকেশন: account.js রিফ্রেশের পরেও অ্যাডমিনের সেটিংস বহাল থাকবে */
   if(typeof window.syncAccountLinks==='function'){
@@ -4096,8 +4111,21 @@ select.ad-search{appearance:auto}
       }).then(function(){toast(a==='ok'?'✓ ৳'+d.amount+' ইউজারের ব্যালেন্সে যোগ হয়েছে':'রিজেক্ট করা হয়েছে');return loadX()}).then(render);
     }).catch(function(e){toast(errMsg(e))});
   }
+  var _st=0;
+  function orderTick(){
+    if(root.hidden||!authed())return;
+    var a=document.activeElement;if(a&&(a.id==='adQ'||(a.dataset&&a.dataset.note!==undefined)))return;
+    var before=S.orders.length;
+    RG.fb('GET','orders').then(function(j){S.orders=toArr(j);S.err=null;var s=sig();if(s!==S.sig){S.sig=s;if(S.orders.length>before){toast('🔔 নতুন অর্ডার এসেছে!');try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}if(['dash','orders','cust'].indexOf(S.tab)>-1)render()}}).catch(function(){});
+  }
+  function startStreams(){
+    if(_st)return;_st=1;
+    try{var f=1,o=new EventSource(RG.db+'/orders.json');var h=function(){if(f){f=0;return}orderTick()};o.addEventListener('put',h);o.addEventListener('patch',h)}catch(e){}
+    try{var g=1,d=new EventSource(RG.db+'/deposits.json');var k=function(){if(g){g=0;return}setTimeout(tickX,100)};d.addEventListener('put',k);d.addEventListener('patch',k)}catch(e){}
+  }
   function tickX(){
     if(root.hidden||!authed()||document.hidden)return;
+    startStreams();
     var before=depPend();
     loadX().then(function(ch){
       var now=depPend();if(now>before&&before!==undefined&&X.loaded){toast('🔔 নতুন ডিপোজিট রিকোয়েস্ট এসেছে!');try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
@@ -4106,8 +4134,7 @@ select.ad-search{appearance:auto}
       if(ch||first)render();
     });
   }
-  setInterval(tickX,5000);setTimeout(tickX,800);
-  try{var _es=new EventSource(RG.db+'/deposits.json');_es.addEventListener('put',function(){setTimeout(tickX,200)})}catch(e){}
+  setInterval(tickX,8000);setTimeout(tickX,1500);
 
   sync();
 })();
@@ -4145,7 +4172,7 @@ window.RG_FIREBASE=window.RG_FIREBASE||{apiKey:'',authDomain:'rick-biswas-80bcc.
     var iv=setInterval(go,20000);return{close:function(){clearInterval(iv);es&&es.close()}}}
 
   /* ---- লাইভ: অ্যাডমিন সেভ করলেই সাইট আপডেট ---- */
-  stream('site/pay',function(p){p=p||{};PAY.bkash=p.bkash||PAY.bkash;PAY.nagad=p.nagad||PAY.nagad;PAY.min=+p.min||10;PAY.note=p.note||'';syncNum();amRender()});
+  stream('site/pay',function(p){p=p||{};window.RG_PAYSET=!!(p.bkash||p.nagad);PAY.bkash=p.bkash||PAY.bkash;PAY.nagad=p.nagad||PAY.nagad;PAY.min=+p.min||10;PAY.note=p.note||'';syncNum();amRender()});
   stream('site/v',function(){try{RG.pull()}catch(e){}});
 
   /* ---- Google লগইন (Firebase Auth) ---- */
@@ -4287,6 +4314,32 @@ window.RG_FIREBASE=window.RG_FIREBASE||{apiKey:'',authDomain:'rick-biswas-80bcc.
     else am.hidden=true;
     was=on;
   }
+  /* শুধু বদলানো অংশ নামায় — ছবির বড় ডাটা বারবার নামে না, তাই সাথে সাথে আপডেট হয় */
+  RG.pull=function(){
+    RG.fb('GET','site/v').then(function(v){
+      if(v==null||(RG.cfg&&RG.cfg.v===v))return;
+      return RG.fb('GET','site/kv').then(function(kv){
+        var loc=RG.cfg||{},lk=loc.__kv;kv=kv||{};
+        function done(c){c.v=v;c.__kv=kv;try{localStorage.setItem(RG.key,JSON.stringify(c))}catch(e){}RG.cfg=c;RG.applyAll(c,false)}
+        if(!lk||!Object.keys(kv).length)return RG.fb('GET','site/cfg').then(function(c){if(!c||typeof c!=='object')return;RG.decCfg(c);done(c)});
+        var c=JSON.parse(JSON.stringify(loc)),ch=Object.keys(kv).filter(function(k){return lk[k]!==kv[k]});
+        Object.keys(lk).forEach(function(k){if(!(k in kv))delete c[k]});
+        return Promise.all(ch.map(function(k){return RG.fb('GET','site/cfg/'+k).then(function(x){if(k==='images'&&x)x=RG.decCfg({images:x}).images;if(x==null)delete c[k];else c[k]=x})})).then(function(){done(c)});
+      });
+    }).catch(function(){});
+  };
+  RG.pull();
+  /* কাস্টমারের অর্ডারের স্ট্যাটাস সাথে সাথে আপডেট */
+  var watched={};
+  function watchOrders(){
+    var a;try{a=JSON.parse(localStorage.getItem('rickGamingManualOrdersV1')||'[]')}catch(e){return}
+    a.filter(function(o){return o.status==='Pending'}).slice(-5).forEach(function(o){
+      if(watched[o.id])return;
+      try{var es=new EventSource(DB+'/orders/'+encodeURIComponent(o.id)+'.json');watched[o.id]=es;
+        var f=1,h=function(){if(f){f=0;return}RG.syncStatus(false)};es.addEventListener('put',h);es.addEventListener('patch',h)}catch(e){}
+    });
+  }
+  watchOrders();setInterval(watchOrders,20000);
   window.addEventListener('hashchange',function(){setTimeout(route,0)});route();ui();
 })();
 </script>
