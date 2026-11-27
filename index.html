@@ -1702,7 +1702,8 @@ html,body,.pk,.po,.btn,.pay,.q,.card,.nav a,.pv-back{touch-action:manipulation}
     if(wa){var wu=/^[+\d\s-]+$/.test(wa)?'https://wa.me/'+wa.replace(/\D/g,'').replace(/^0(?=1\d{9}$)/,'880'):(/^https?:\/\//i.test(wa)?wa:'https://'+wa);
       q('[data-link="whatsapp"]').forEach(function(a){a.href=wu;a.target='_blank';a.rel='noopener noreferrer'})}
     if(s.notice){var el=document.getElementById('popText');if(el){el.textContent='';s.notice.split(/\r?\n/).forEach(function(l,i){if(i)el.appendChild(document.createElement('br'));el.appendChild(document.createTextNode(l))})}}
-    if(s.pay){var n=document.getElementById('rgNumber');if(n)n.textContent=s.pay}
+    if(s.pay&&!s.bkash&&!s.nagad){var n=document.getElementById('rgNumber');if(n)n.textContent=s.pay}
+    window.dispatchEvent(new Event('rg:config-updated'));
   };
   /* ===== হোম কার্ড সিস্টেম (অ্যাডমিনের "কার্ড" ট্যাব থেকে নিয়ন্ত্রিত) ===== */
   RG.builtins={
@@ -3360,7 +3361,18 @@ setInterval(fetchFreshAccountConfig, 15000);
  window.renderOrders=render;
  window.rgOpenPay=function(o){current={package:o.package,price:o.price,viewId:'cxView',fields:o.fields,uid:o.uid};$('rgSummary').textContent=o.package+' — ৳'+o.price;$('rgUid').style.display='none';var lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='none';$('rgTrx').value='';$('rgPayModal').classList.add('show');};
  document.addEventListener('click',function(e){const b=e.target.closest('a[id$="Buy"],button[id$="Buy"],#buyBtn');if(!b)return;const id=b.id.replace(/Buy$/,'');const view=b.closest('main');if(!view)return;e.preventDefault();e.stopImmediatePropagation();const chosen=view.querySelector('.pk.on');const inp=view.querySelector('input[id$="Inp"],#uid');const pkg=chosen?.dataset.name||'Selected package';const price=Number(chosen?.dataset.price||0);if(!chosen){alert('আগে একটি প্যাকেজ সিলেক্ট করুন');return;}current={package:pkg,price,viewId:view.id};$('rgSummary').textContent=pkg+' — ৳'+price;$('rgUid').value=inp?.value||'';$('rgUid').style.display='';{const lb=document.querySelector('label[for="rgUid"]');if(lb)lb.style.display='';}$('rgTrx').value='';$('rgPayModal').classList.add('show');},true);
- document.querySelectorAll('[data-rg-method]').forEach(b=>b.addEventListener('click',()=>{method=b.dataset.rgMethod;document.querySelectorAll('[data-rg-method]').forEach(x=>x.classList.toggle('active',x===b));}));
+ function paymentNumber(){
+    const s=(window.RG&&RG.cfg&&RG.cfg.settings)||{};
+    return String((method==='bKash'?(s.bkash||s.pay):(s.nagad||s.pay))||'01620576948').trim();
+  }
+  function updatePaymentNumber(){ $('rgNumber').textContent=paymentNumber(); }
+  document.querySelectorAll('[data-rg-method]').forEach(b=>b.addEventListener('click',()=>{
+    method=b.dataset.rgMethod;
+    document.querySelectorAll('[data-rg-method]').forEach(x=>x.classList.toggle('active',x===b));
+    updatePaymentNumber();
+  }));
+  updatePaymentNumber();
+  window.addEventListener('rg:config-updated',updatePaymentNumber);
  $('rgCopy').onclick=()=>{const n=$('rgNumber').textContent.trim();if(navigator.clipboard?.writeText)navigator.clipboard.writeText(n).then(()=>$('rgCopy').textContent='কপি হয়েছে').catch(()=>alert(n));else alert(n)};
  $('rgClose').onclick=()=>$('rgPayModal').classList.remove('show');
  $('rgSubmit').onclick=()=>{const ex=current&&current.fields;const uid=ex?String(current.uid||'-'):$('rgUid').value.trim(),trx=$('rgTrx').value.trim();if(!ex&&uid.length<6){alert('সঠিক Player UID দিন');return}if(trx.length<5){alert('সঠিক Transaction ID দিন');return}if(!current)return;const arr=read();const id='RG'+Date.now().toString().slice(-8);arr.push({id,package:current.package,price:current.price,uid,name:(!ex&&nameCache()[uid])||undefined,fields:ex||undefined,method,trx,status:'Pending',createdAt:new Date().toISOString()});save(arr);window.RG&&RG.sendOrder(arr[arr.length-1]);if(!ex)setTimeout(()=>{tried[id]=1;attachName(id,uid)},2500);$('rgPayModal').classList.remove('show');render();location.hash='my-orders';alert('অর্ডার জমা হয়েছে। Status: Pending');};
@@ -3528,6 +3540,21 @@ select.ad-search{appearance:auto}
 <div class="ad-toast" id="adToast"></div>
 
 <script>
+/* একসাথে পুরো সাইটে শুধু একটি অফার সিলেক্ট থাকবে */
+(function(){
+  function selectOnly(target){
+    if(!target || !target.classList || !target.classList.contains('pk')) return;
+    document.querySelectorAll('.pk.on').forEach(function(x){if(x!==target)x.classList.remove('on')});
+    target.classList.add('on');
+  }
+  document.addEventListener('click',function(e){
+    var b=e.target.closest && e.target.closest('.pk'); if(b)selectOnly(b);
+  },true);
+  document.addEventListener('pointerup',function(e){
+    var b=e.target.closest && e.target.closest('.pk'); if(b)selectOnly(b);
+  },true);
+})();
+
 (function(){
   var AUTH='rgAdminAuthV2';
   var root=document.getElementById('adRoot'), toastEl=document.getElementById('adToast'), tt, pendingImg=null, pendingCard=null;
@@ -3685,12 +3712,12 @@ select.ad-search{appearance:auto}
     var s=S.cfg.settings||{};
     function lk(n){var a=document.querySelector('[data-link="'+n+'"]'),h=a&&a.getAttribute('href');return h&&h!=='#'?h:''}
     var pop=document.getElementById('popText'),pn=document.getElementById('rgNumber');
-    return {siteName:s.siteName||document.title,pay:s.pay||(pn?pn.textContent:''),whatsapp:s.whatsapp||lk('whatsapp'),tgChannel:s.tgChannel||lk('telegram-channel'),tgGroup:s.tgGroup||lk('telegram-group'),youtube:s.youtube||lk('youtube-channel'),notice:s.notice||(pop?pop.innerText:'')};
+    return {siteName:s.siteName||document.title,pay:s.pay||(pn?pn.textContent:''),bkash:s.bkash||s.pay||(pn?pn.textContent:''),nagad:s.nagad||s.pay||(pn?pn.textContent:''),whatsapp:s.whatsapp||lk('whatsapp'),tgChannel:s.tgChannel||lk('telegram-channel'),tgGroup:s.tgGroup||lk('telegram-group'),youtube:s.youtube||lk('youtube-channel'),notice:s.notice||(pop?pop.innerText:'')};
   }
   function settingsView(){
     var c=curSet();
     function f(id,label,v,ph){return '<label class="ad-field" for="adS_'+id+'">'+label+'</label><input class="ad-search" id="adS_'+id+'" value="'+esc(v)+'" placeholder="'+esc(ph||'')+'">'}
-    return '<div class="ad-card"><b>সাইটের তথ্য</b>'+f('siteName','সাইটের নাম',c.siteName)+f('pay','পেমেন্ট নম্বর (bKash/Nagad Send Money)',c.pay)
+    return '<div class="ad-card"><b>সাইটের তথ্য</b>'+f('siteName','সাইটের নাম',c.siteName)+f('bkash','বিকাশ Send Money নম্বর',c.bkash,'01XXXXXXXXX')+f('nagad','নগদ Send Money নম্বর',c.nagad,'01XXXXXXXXX')
       +f('whatsapp','WhatsApp নম্বর বা লিংক (হোমের WhatsApp বাটন)',c.whatsapp,'8801XXXXXXXXX অথবা https://wa.me/...')+f('tgChannel','Telegram চ্যানেল লিংক',c.tgChannel,'https://t.me/...')+f('tgGroup','Telegram গ্রুপ লিংক',c.tgGroup,'https://t.me/...')+f('youtube','YouTube লিংক',c.youtube,'https://youtube.com/...')
       +'<label class="ad-field" for="adS_notice">নোটিফিকেশন পপআপের লেখা</label><textarea class="ad-search" id="adS_notice" rows="4">'+esc(c.notice)+'</textarea>'
       +'<button class="ad-btn pri" id="adSaveSet" style="margin-top:12px">সেভ করুন</button></div>'
@@ -3959,8 +3986,8 @@ select.ad-search{appearance:auto}
     }
     if(S.tab==='set'){
       $('#adSaveSet').onclick=function(){
-        var s={};['siteName','pay','whatsapp','tgChannel','tgGroup','youtube','notice'].forEach(function(k){s[k]=$('#adS_'+k).value.trim()});
-        S.cfg.settings=s;saveCfg('সেটিংস সেভ হয়েছে ✓');
+        var s={};['siteName','bkash','nagad','whatsapp','tgChannel','tgGroup','youtube','notice'].forEach(function(k){s[k]=$('#adS_'+k).value.trim()});
+        S.cfg.settings=s;saveCfg('সেটিংস সেভ হয়েছে ✓').then(function(ok){if(ok)window.dispatchEvent(new Event('rg:config-updated'))});
       };
       $('#adSavePass').onclick=function(){
         var v=$('#adNp').value;if(v.length<4)return toast('কমপক্ষে ৪ অক্ষর দিন');
