@@ -3856,9 +3856,9 @@ select.ad-search{appearance:auto}
       return loginView();
     }
     var o=S.orders,pend=o.filter(function(x){return x.status==='Pending'}).length;
-    var tabs=[['dash','ড্যাশবোর্ড'],['orders','অর্ডার'+(pend?' ('+pend+')':'')],['cust','কাস্টমার'],['cards','কার্ড'],['pk','দাম/প্যাকেজ'],['img','ছবি/লোগো'],['set','সেটিংস']];
+    var tabs=[['dash','ড্যাশবোর্ড'],['orders','অর্ডার'+(pend?' ('+pend+')':'')],['dep','ডিপোজিট'+(depPend()?' ('+depPend()+')':'')],['usr','ইউজার'],['pay','পেমেন্ট নম্বর'],['cust','কাস্টমার'],['cards','কার্ড'],['pk','দাম/প্যাকেজ'],['img','ছবি/লোগো'],['set','সেটিংস']];
     var body={dash:dashView,orders:ordersView,cust:custView}[S.tab];
-    body=body?body(o):S.tab==='cards'?cardsView():S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
+    body=body?body(o):S.tab==='pay'?payView():S.tab==='dep'?depView():S.tab==='usr'?usrView():S.tab==='cards'?cardsView():S.tab==='pk'?pkView():S.tab==='img'?imgView():settingsView();
     var keepQ=document.activeElement&&document.activeElement.id==='adQ';
     var st=root.scrollTop;
     root.innerHTML='<div class="ad-wrap"><div class="ad-top"><div class="ad-ic">A</div><h1>Admin Panel</h1><button class="ad-btn" id="adRef" title="রিফ্রেশ">⟳</button><button class="ad-btn" id="adSite">সাইট</button><button class="ad-btn no" id="adOut">লগআউট</button></div>'
@@ -3911,6 +3911,7 @@ select.ad-search{appearance:auto}
     root.querySelectorAll('[data-notesave]').forEach(function(b){b.onclick=function(){saveNote(b.dataset.notesave)}});
     var q=$('#adQ');if(q)q.oninput=function(){S.q=q.value;render()};
 
+    if(['pay','dep','usr'].indexOf(S.tab)>-1)bindX();
     if(S.tab==='cards')bindCards();
     if(S.tab==='pk'){
       var l=gridList();
@@ -4023,7 +4024,270 @@ select.ad-search{appearance:auto}
     var _s=window.syncAccountLinks;
     window.syncAccountLinks=function(){var r=_s.apply(this,arguments);try{RG.applySettings()}catch(e){}return r};
   }
+
+  /* ===== EXT: পেমেন্ট নম্বর / ডিপোজিট / ইউজার (লাইভ) ===== */
+  var X={pay:{},fb:{},deps:[],users:[],sig:'',df:'Pending',uq:''};
+  function depPend(){return X.deps.filter(function(d){return d.status==='Pending'}).length}
+  function loadX(){
+    return Promise.all([RG.fb('GET','site/pay'),RG.fb('GET','site/fb'),RG.fb('GET','deposits'),RG.fb('GET','users')]).then(function(a){
+      X.pay=a[0]||{};X.fb=a[1]||{};X.deps=toArr(a[2]).reverse();
+      X.users=Object.keys(a[3]||{}).map(function(k){var u=a[3][k]||{};u.uid=k;return u}).sort(function(p,q){return new Date(q.createdAt||0)-new Date(p.createdAt||0)});
+      var s=JSON.stringify([X.deps.map(function(d){return d.id+d.status}),X.users.map(function(u){return u.uid+u.balance}),X.pay,X.fb]);
+      var ch=s!==X.sig;X.sig=s;return ch;
+    }).catch(function(){return false});
+  }
+  function fld(id,label,v,ph){return '<label class="ad-field" for="'+id+'">'+label+'</label><input class="ad-search" id="'+id+'" value="'+esc(v)+'" placeholder="'+esc(ph||'')+'">'}
+  function payView(){
+    var p=X.pay,f=X.fb;
+    return '<div class="ad-card"><h3 style="margin-bottom:4px">💳 পেমেন্ট নম্বর</h3><p class="ad-note">সেভ করলেই সাইটে সাথে সাথে বদলে যাবে (রিফ্রেশ লাগবে না)।</p>'
+      +fld('adP_bkash','বিকাশ নম্বর',p.bkash||'01620576948','01XXXXXXXXX')
+      +fld('adP_nagad','নগদ নম্বর',p.nagad||'01620576948','01XXXXXXXXX')
+      +fld('adP_min','সর্বনিম্ন Add Money (৳)',p.min||10,'10')
+      +'<label class="ad-field" for="adP_note">Add Money পেজের নোট (ঐচ্ছিক)</label><textarea class="ad-search" id="adP_note" rows="3" style="height:auto">'+esc(p.note||'')+'</textarea>'
+      +'<button class="ad-btn ok" id="adPaySave" style="margin-top:12px;width:100%">সেভ করুন</button></div>'
+      +'<div class="ad-card"><h3 style="margin-bottom:4px">🔐 Gmail লগইন সেটআপ</h3><p class="ad-note">Firebase Console → Project Settings → Your apps (Web) থেকে apiKey ও appId কপি করুন। এরপর Authentication → Sign-in method-এ Google চালু করুন, আর Settings → Authorized domains-এ আপনার সাইটের ডোমেইন (যেমন rick-biswas.github.io) যোগ করুন।</p>'
+      +fld('adF_key','apiKey',f.apiKey||'','AIza...')
+      +fld('adF_app','appId',f.appId||'','1:123...:web:abc')
+      +fld('adF_dom','authDomain',f.authDomain||'rick-biswas-80bcc.firebaseapp.com','')
+      +'<button class="ad-btn ok" id="adFbSave" style="margin-top:12px;width:100%">সেভ করুন</button></div>';
+  }
+  function depView(){
+    var fl=['Pending','Approved','Rejected','All'],list=X.deps.filter(function(d){return X.df==='All'||d.status===X.df});
+    return '<div class="ad-chips">'+fl.map(function(k){return '<button class="ad-chip'+(X.df===k?' on':'')+'" data-dfilter="'+k+'">'+k+'</button>'}).join('')+'</div>'
+      +(list.length?list.map(function(d){
+        return '<div class="ad-card"><div class="ad-row"><b>'+money(d.amount)+' · '+esc(d.method)+'</b><span class="ad-st '+esc(d.status)+'">'+esc(d.status)+'</span></div>'
+          +'<div class="ad-row"><span>ইউজার</span><b>'+esc(d.name||'')+'</b></div><div class="ad-row"><span>ইমেইল</span><b>'+esc(d.email||'')+'</b></div>'
+          +'<div class="ad-row"><span>প্রেরকের নম্বর</span><b>'+esc(d.sender)+'</b></div><div class="ad-row"><span>TrxID</span><b>'+esc(d.trx)+'</b></div>'
+          +'<div class="ad-row"><span>সময়</span><b>'+fmt(d.createdAt)+'</b></div>'
+          +'<div style="display:flex;gap:8px;margin-top:10px"><button class="ad-btn" data-copy="'+esc(d.trx)+'">TrxID কপি</button>'
+          +(d.status==='Pending'?'<button class="ad-btn ok" data-dact="ok" data-id="'+esc(d.id)+'">✓ Approve</button><button class="ad-btn no" data-dact="no" data-id="'+esc(d.id)+'">✕ Reject</button>':'')+'</div></div>'}).join(''):'<div class="ad-empty">কোনো রিকোয়েস্ট নেই</div>');
+  }
+  function usrView(){
+    var q=X.uq.toLowerCase(),list=X.users.filter(function(u){return !q||((u.name||'')+(u.email||'')).toLowerCase().indexOf(q)>-1});
+    return '<input class="ad-search" id="adUq" placeholder="নাম বা ইমেইল দিয়ে খুঁজুন" value="'+esc(X.uq)+'">'
+      +'<p class="ad-note">মোট ইউজার: '+X.users.length+'</p>'
+      +list.map(function(u){return '<div class="ad-card"><div class="ad-row"><b>'+esc(u.name||'-')+'</b><b>'+money(u.balance)+'</b></div><div class="ad-row"><span>'+esc(u.email||'')+'</span><span>'+(u.createdAt?fmt(u.createdAt):'')+'</span></div>'
+        +'<button class="ad-btn" data-uact="adj" data-uid="'+esc(u.uid)+'" style="margin-top:8px">ব্যালেন্স যোগ/বিয়োগ</button></div>'}).join('');
+  }
+  function bindX(){
+    var b=$('#adPaySave');if(b)b.onclick=function(){
+      var v={bkash:$('#adP_bkash').value.trim(),nagad:$('#adP_nagad').value.trim(),min:+$('#adP_min').value||10,note:$('#adP_note').value.trim(),v:Date.now()};
+      if(!v.bkash||!v.nagad)return toast('দুইটা নম্বরই দিন');
+      RG.fb('PUT','site/pay',v).then(function(){X.pay=v;toast('পেমেন্ট নম্বর সেভ হয়েছে ✓ সাইটে লাইভ')}).catch(function(e){toast(errMsg(e))});
+    };
+    b=$('#adFbSave');if(b)b.onclick=function(){
+      var v={apiKey:$('#adF_key').value.trim(),appId:$('#adF_app').value.trim(),authDomain:$('#adF_dom').value.trim()};
+      RG.fb('PUT','site/fb',v).then(function(){X.fb=v;toast('সেভ হয়েছে ✓ সাইট রিফ্রেশ করলে Google লগইন চালু হবে')}).catch(function(e){toast(errMsg(e))});
+    };
+    root.querySelectorAll('[data-dfilter]').forEach(function(x){x.onclick=function(){X.df=x.dataset.dfilter;render()}});
+    root.querySelectorAll('[data-dact]').forEach(function(x){x.onclick=function(){depAct(x.dataset.dact,x.dataset.id)}});
+    root.querySelectorAll('[data-uact]').forEach(function(x){x.onclick=function(){
+      var n=prompt('কত টাকা যোগ করবেন? (বিয়োগ করতে সংখ্যার আগে - দিন)');n=parseFloat(n);if(!n)return;
+      RG.fb('PATCH','users/'+x.dataset.uid,{balance:{'.sv':{increment:n}}}).then(function(){toast('ব্যালেন্স আপডেট হয়েছে ✓');return loadX()}).then(function(){render()}).catch(function(e){toast(errMsg(e))});
+    }});
+    var q=$('#adUq');if(q)q.oninput=function(){X.uq=q.value;var p=q.selectionStart;render();var n=$('#adUq');if(n){n.focus();n.setSelectionRange(p,p)}};
+  }
+  function depAct(a,id){
+    RG.fb('GET','deposits/'+id).then(function(d){
+      if(!d||d.status!=='Pending'){toast('এটা আগেই প্রসেস হয়েছে');return loadX().then(render)}
+      var st=a==='ok'?'Approved':'Rejected',patch={status:st,at:new Date().toISOString()};
+      return RG.fb('PATCH','deposits/'+id,patch).then(function(){return RG.fb('PATCH','userDeps/'+d.userId+'/'+id,patch)}).then(function(){
+        return a==='ok'?RG.fb('PATCH','users/'+d.userId,{balance:{'.sv':{increment:+d.amount||0}}}):null;
+      }).then(function(){toast(a==='ok'?'✓ ৳'+d.amount+' ইউজারের ব্যালেন্সে যোগ হয়েছে':'রিজেক্ট করা হয়েছে');return loadX()}).then(render);
+    }).catch(function(e){toast(errMsg(e))});
+  }
+  function tickX(){
+    if(root.hidden||!authed()||document.hidden)return;
+    var before=depPend();
+    loadX().then(function(ch){
+      var now=depPend();if(now>before&&before!==undefined&&X.loaded){toast('🔔 নতুন ডিপোজিট রিকোয়েস্ট এসেছে!');try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
+      var first=!X.loaded;X.loaded=true;
+      var a=document.activeElement;if(a&&root.contains(a)&&(a.tagName==='INPUT'||a.tagName==='TEXTAREA'))return;
+      if(ch||first)render();
+    });
+  }
+  setInterval(tickX,5000);setTimeout(tickX,800);
+  try{var _es=new EventSource(RG.db+'/deposits.json');_es.addEventListener('put',function(){setTimeout(tickX,200)})}catch(e){}
+
   sync();
+})();
+</script>
+
+<style>
+.am-meth{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px}
+.am-meth button{border:1.5px solid var(--bd);background:#fff;border-radius:14px;padding:13px;font-weight:800;color:#172554;font-family:inherit;font-size:15px}
+.am-meth button.on{border-color:var(--v);background:#eff6ff;box-shadow:0 0 0 3px #2563eb22}
+.am-num{display:flex;align-items:center;justify-content:space-between;gap:8px;background:#f1f6ff;border-radius:14px;padding:13px}
+.am-num small{display:block;color:var(--mu);font-size:12px}.am-num b{font-size:22px;letter-spacing:.5px}
+.am-num button,.am-chips button{border:0;background:var(--g);color:#fff;border-radius:10px;padding:8px 12px;font-weight:700;font-family:inherit}
+.am-chips{display:flex;flex-wrap:wrap;gap:8px;margin:10px 0}.am-chips button{background:#eff6ff;color:#1d4ed8;border:1px solid #bfdbfe}
+.am-note{color:var(--mu);font-size:13px;line-height:1.6;margin-top:10px;white-space:pre-line}
+.am-f{margin-top:12px}.am-f label{display:block;font-weight:700;font-size:13.5px;margin-bottom:6px}
+.am-h{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--bd)}
+.am-h:last-child{border:0}.am-h small{color:var(--mu);display:block;margin-top:2px}
+.am-st{font-size:12px;font-weight:800;border-radius:99px;padding:4px 10px}
+.am-st.Pending{background:#fef3c7;color:#b45309}.am-st.Approved{background:#dcfce7;color:#15803d}.am-st.Rejected{background:#fee2e2;color:#b91c1c}
+.am-gl{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;height:50px;border-radius:14px;border:1.5px solid var(--bd);background:#fff;font-weight:800;font-size:15px;color:#0f172a;font-family:inherit}
+.rg-method.w{grid-column:1/-1}
+</style>
+<script>
+/* ===== Gmail Login + Add Money + Live Payment Numbers (Firebase) ===== */
+/* Google লগইনের জন্য Firebase API Key: অ্যাডমিন প্যানেল → পেমেন্ট নম্বর ট্যাবে বসালেই হবে। চাইলে এখানেও দিতে পারেন */
+window.RG_FIREBASE=window.RG_FIREBASE||{apiKey:'',authDomain:'rick-biswas-80bcc.firebaseapp.com',projectId:'rick-biswas-80bcc',appId:''};
+(function(){
+  var DB=RG.db,U=null,auth=null,W=false,uStream=null,dStream=null,was=false;
+  var PAY={bkash:'01620576948',nagad:'01620576948',min:10,note:''};
+  function $(i){return document.getElementById(i)}
+  function esc(v){return String(v==null?'':v).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+  function toast(m){var t=$('toast');if(!t)return alert(m);t.textContent=m;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('show')},2800)}
+  function stream(path,cb){var es,d;function go(){clearTimeout(d);d=setTimeout(function(){RG.fb('GET',path).then(cb).catch(function(){})},120)}
+    try{es=new EventSource(DB+'/'+path+'.json');es.addEventListener('put',go);es.addEventListener('patch',go)}catch(e){}
+    var iv=setInterval(go,20000);return{close:function(){clearInterval(iv);es&&es.close()}}}
+
+  /* ---- লাইভ: অ্যাডমিন সেভ করলেই সাইট আপডেট ---- */
+  stream('site/pay',function(p){p=p||{};PAY.bkash=p.bkash||PAY.bkash;PAY.nagad=p.nagad||PAY.nagad;PAY.min=+p.min||10;PAY.note=p.note||'';syncNum();amRender()});
+  stream('site/v',function(){try{RG.pull()}catch(e){}});
+
+  /* ---- Google লগইন (Firebase Auth) ---- */
+  function loadJs(src){return new Promise(function(r,j){var s=document.createElement('script');s.src=src;s.onload=r;s.onerror=j;document.head.appendChild(s)})}
+  var sdk=loadJs('https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js').then(function(){return loadJs('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js')});
+  Promise.all([sdk,RG.fb('GET','site/fb').catch(function(){return{}})]).then(function(a){
+    var c=Object.assign({},window.RG_FIREBASE,a[1]||{});if(!c.apiKey)return;
+    firebase.initializeApp(c);auth=firebase.auth();auth.onAuthStateChanged(onUser);
+  }).catch(function(){});
+  function login(){
+    if(!auth)return toast('Google লগইন এখনো চালু হয়নি — অ্যাডমিন প্যানেলে Firebase API Key বসান');
+    var p=new firebase.auth.GoogleAuthProvider();p.setCustomParameters({prompt:'select_account'});
+    auth.signInWithPopup(p).catch(function(e){
+      if(e.code==='auth/popup-blocked'||e.code==='auth/operation-not-supported-in-this-environment')return auth.signInWithRedirect(p);
+      if(e.code==='auth/unauthorized-domain')return toast('Firebase Console → Authentication → Settings → Authorized domains-এ এই সাইটের ডোমেইন যোগ করুন');
+      if(e.code==='auth/popup-closed-by-user'||e.code==='auth/cancelled-popup-request')return;
+      toast('লগইন হয়নি: '+(e.code||e.message));
+    });
+  }
+  function logout(){auth&&auth.signOut()}
+  function pinOf(uid){var n=0;for(var i=0;i<uid.length;i++)n=(n*31+uid.charCodeAt(i))%9000000;return String(1000000+n)}
+  function onUser(u){
+    if(uStream){uStream.close();uStream=null}if(dStream){dStream.close();dStream=null}
+    if(!u){U=null;ui();return}
+    U={uid:u.uid,name:u.displayName||'',email:u.email||'',photo:u.photoURL||'',balance:0,pin:pinOf(u.uid)};ui();
+    var base={name:U.name,email:U.email,photo:U.photo,lastLogin:new Date().toISOString()};
+    RG.fb('GET','users/'+U.uid).then(function(r){
+      return r?RG.fb('PATCH','users/'+U.uid,base):RG.fb('PUT','users/'+U.uid,Object.assign({balance:0,pin:U.pin,createdAt:new Date().toISOString()},base));
+    }).catch(function(){});
+    uStream=stream('users/'+U.uid,function(r){if(!U||!r)return;U.balance=+r.balance||0;U.pin=r.pin||U.pin;ui()});
+    dStream=stream('userDeps/'+U.uid,function(r){U.deps=Object.keys(r||{}).map(function(k){return r[k]}).sort(function(a,b){return new Date(b.createdAt)-new Date(a.createdAt)});amRender()});
+  }
+  function ui(){
+    var b=U?U.balance:0;
+    if(window.setProfile)window.setProfile(U?{loggedIn:true,name:U.name,email:U.email,avatar:U.photo,balance:b,supportPin:U.pin,verified:true}:{});
+    var set=function(id,t){var e=$(id);if(e)e.textContent=t};
+    set('accName',U?'Hi, '+U.name:'Hi, Guest');set('accMail',U?U.email:'লগইন করে অর্ডার করুন');set('acLoTx',U?'Logout':'Login');
+    var lo=$('accLo');if(lo){var sp=lo.querySelector('span');if(sp)sp.textContent=U?'Logout':'Login';var us=lo.querySelector('use');if(us)us.setAttribute('href',U?'#a-power':'#a-in')}
+    if(U&&U.photo){var av=$('accAv');if(av&&!av.querySelector('img')){av.innerHTML='';var im=document.createElement('img');im.src=U.photo;im.alt='';av.appendChild(im)}}
+    var w=$('rgWalletBtn');if(w){w.style.display=U?'':'none';w.textContent='ওয়ালেট ব্যালেন্স দিয়ে পে করুন (৳'+b+')'}
+    amRender();
+  }
+  /* লগইন করা থাকলে প্রোডাক্ট পেজের "Login" বাটন ঠিক করে দেয় */
+  setInterval(function(){
+    if(!U)return;
+    ['buyBtn','uidBuy','wmBuy','wlBuy','luBuy','inBuy'].forEach(function(id){var e=$(id);if(e&&e.textContent.trim()==='Login'){e.textContent='অর্ডার করুন';e.setAttribute('href','#')}});
+    document.querySelectorAll('[id$="LoginWarn"]').forEach(function(e){e.style.display='none'});
+    ['uidBal','wmBal','wlBal','luBal','inBal'].forEach(function(id){var e=$(id);if(e)e.textContent=U.balance.toFixed(2)});
+  },500);
+
+  /* ---- পেমেন্ট মডাল: আলাদা বিকাশ/নগদ নম্বর + ওয়ালেট পে ---- */
+  var mods=document.querySelector('.rg-methods');
+  if(mods){var wb=document.createElement('button');wb.type='button';wb.id='rgWalletBtn';wb.className='rg-method w';wb.style.display='none';mods.appendChild(wb)}
+  function modalParts(){var n=$('rgNumber');return[n&&n.parentElement.parentElement,$('rgTrx'),document.querySelector('label[for="rgTrx"]')]}
+  function syncNum(){
+    var n=$('rgNumber');if(!n)return;var m=document.querySelector('[data-rg-method].active');
+    n.textContent=(m&&m.dataset.rgMethod==='Nagad')?PAY.nagad:PAY.bkash;
+    modalParts().forEach(function(e){if(e)e.style.display=W?'none':''});
+  }
+  document.querySelectorAll('[data-rg-method]').forEach(function(b){b.addEventListener('click',function(){W=false;var w=$('rgWalletBtn');if(w)w.classList.remove('active');syncNum()})});
+  if($('rgWalletBtn'))$('rgWalletBtn').onclick=function(){W=true;document.querySelectorAll('[data-rg-method]').forEach(function(x){x.classList.remove('active')});this.classList.add('active');syncNum()};
+  var pm=$('rgPayModal');if(pm)new MutationObserver(function(){if(pm.classList.contains('show')){W=false;var w=$('rgWalletBtn');if(w)w.classList.remove('active');syncNum()}}).observe(pm,{attributes:true,attributeFilter:['class']});
+
+  /* ---- ক্লিক ইন্টারসেপ্ট (লগইন গেট, Add Money, লগইন/লগআউট, ওয়ালেট সাবমিট) ---- */
+  window.addEventListener('click',function(e){
+    var t=e.target,c=t.closest&&t.closest.bind(t);if(!c)return;
+    function stop(){e.preventDefault();e.stopImmediatePropagation()}
+    if(c('#accLo,#acLogout')){stop();U?logout():login();return}
+    if(c('nav.nav a.add,#acAdd,.acc-it[data-go="addmoney"]')){stop();var ap=$('accPanel');if(ap){ap.classList.remove('open','show','on');ap.setAttribute('aria-hidden','true')}location.hash='add-money';return}
+    if(c('a[id$="Buy"],button[id$="Buy"],#buyBtn')&&!U){stop();toast('অর্ডার করতে আগে Gmail দিয়ে লগইন করুন');login();return}
+    if(c('#rgSubmit')){
+      window.__rgW=null;if(!W)return;
+      var m=/৳\s*([\d.]+)\s*$/.exec($('rgSummary').textContent),price=m?+m[1]:0;
+      if(!U){stop();return login()}
+      if(U.balance<price){stop();toast('ওয়ালেটে টাকা কম — আগে Add Money করুন');return}
+      $('rgTrx').value='WALLET'+Date.now();window.__rgW={price:price,at:Date.now()};
+    }
+  },true);
+  var op=window.rgOpenPay;if(op)window.rgOpenPay=function(){if(!U){toast('অর্ডার করতে আগে Gmail দিয়ে লগইন করুন');return login()}return op.apply(this,arguments)};
+  var so=RG.sendOrder;
+  RG.sendOrder=function(o){
+    if(U){o.userId=U.uid;o.email=U.email;o.userName=U.name}
+    var w=window.__rgW;
+    if(w&&U&&Date.now()-w.at<3000){window.__rgW=null;o.method='Wallet';o.paid=true;RG.fb('PATCH','users/'+U.uid,{balance:{'.sv':{increment:-w.price}}}).catch(function(){})}
+    return so.apply(this,arguments);
+  };
+
+  /* ---- Add Money পেজ ---- */
+  var am=document.createElement('main');am.className='wrap';am.id='amView';am.hidden=true;
+  am.innerHTML='<button class="pv-back" type="button" id="amBack"><svg class="i"><use href="#arr"/></svg>Back</button><div id="amBody"></div>';
+  (document.getElementById('cxView')||document.body).insertAdjacentElement('afterend',am);
+  var M='bKash',amt='',snd='',trx='';
+  $('amBack').onclick=function(){location.hash=''};
+  function amRender(){
+    var v=$('amBody');if(!v||am.hidden)return;
+    var keep={a:$('amAmt'),s:$('amSnd'),t:$('amTrx')};if(keep.a)amt=keep.a.value;if(keep.s)snd=keep.s.value;if(keep.t)trx=keep.t.value;
+    var h='';
+    if(!U){
+      h='<section class="pv-box"><div class="pv-head"><span class="n">!</span><h2>লগইন প্রয়োজন</h2></div><div class="pv-body"><p class="am-note" style="margin:0 0 14px">টাকা অ্যাড করতে আগে Gmail দিয়ে লগইন করুন।</p><button class="am-gl" id="amLogin" type="button"><svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.1C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.4-4.1 7-10.1 7-17.6z"/><path fill="#FBBC05" d="M10.5 28.7c-.5-1.4-.8-3-.8-4.7s.3-3.2.8-4.7l-7.9-6.1C.9 16.4 0 20.1 0 24s.9 7.6 2.6 10.8l7.9-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.6-5.9c-2.1 1.4-4.9 2.3-8.3 2.3-6.3 0-11.6-4.1-13.5-9.8l-7.9 6.1C6.5 42.6 14.6 48 24 48z"/></svg>Google দিয়ে লগইন করুন</button></div></section>';
+    }else{
+      var num=M==='Nagad'?PAY.nagad:PAY.bkash;
+      h='<section class="pv-box"><div class="pv-head"><span class="n">1</span><h2>পেমেন্ট মাধ্যম</h2></div><div class="pv-body">'
+       +'<div class="am-meth"><button type="button" data-m="bKash" class="'+(M==='bKash'?'on':'')+'">বিকাশ</button><button type="button" data-m="Nagad" class="'+(M==='Nagad'?'on':'')+'">নগদ</button></div>'
+       +'<div class="am-num"><div><small>Send Money করুন এই নম্বরে</small><b>'+esc(num)+'</b></div><button type="button" id="amCopy">কপি</button></div>'
+       +(PAY.note?'<p class="am-note">'+esc(PAY.note)+'</p>':'')+'</div></section>'
+       +'<section class="pv-box"><div class="pv-head"><span class="n">2</span><h2>টাকার পরিমাণ</h2></div><div class="pv-body">'
+       +'<input class="inp" id="amAmt" inputmode="numeric" placeholder="কমপক্ষে ৳'+PAY.min+'" value="'+esc(amt)+'">'
+       +'<div class="am-chips">'+[50,100,200,500,1000].map(function(x){return'<button type="button" data-q="'+x+'">৳'+x+'</button>'}).join('')+'</div>'
+       +'<div class="am-f"><label>আপনার '+(M==='Nagad'?'নগদ':'বিকাশ')+' নম্বর (যে নম্বর থেকে পাঠিয়েছেন)</label><input class="inp" id="amSnd" inputmode="numeric" placeholder="01XXXXXXXXX" value="'+esc(snd)+'"></div>'
+       +'<div class="am-f"><label>Transaction ID (TrxID)</label><input class="inp" id="amTrx" placeholder="যেমন: DKP1WXXF71" value="'+esc(trx)+'"></div>'
+       +'<button class="btn login" id="amGo" type="button" style="width:100%;display:flex;align-items:center;justify-content:center">রিকোয়েস্ট জমা দিন</button>'
+       +'<p class="am-note">টাকা পাঠানোর পর TrxID দিন। অ্যাডমিন চেক করে অ্যাপ্রুভ করলেই ব্যালেন্সে যোগ হবে।</p></div></section>'
+       +'<section class="pv-box"><div class="pv-head"><span class="n">3</span><h2>আমার অ্যাড মানি হিস্ট্রি</h2></div><div class="pv-body">'
+       +((U.deps&&U.deps.length)?U.deps.map(function(d){return'<div class="am-h"><div><b>৳'+esc(d.amount)+' · '+esc(d.method)+'</b><small>'+esc(d.trx)+' · '+new Date(d.createdAt).toLocaleString('en-GB')+'</small></div><span class="am-st '+esc(d.status)+'">'+esc(d.status)+'</span></div>'}).join(''):'<p class="am-note" style="margin:0">এখনো কোনো রিকোয়েস্ট নেই</p>')+'</div></section>';
+    }
+    v.innerHTML=h;bindAm();
+    if(keep.a&&document.activeElement===document.body){}
+  }
+  function bindAm(){
+    var g=$('amLogin');if(g)g.onclick=login;
+    document.querySelectorAll('#amBody [data-m]').forEach(function(b){b.onclick=function(){M=b.dataset.m;amRender()}});
+    document.querySelectorAll('#amBody [data-q]').forEach(function(b){b.onclick=function(){amt=b.dataset.q;amRender()}});
+    var cp=$('amCopy');if(cp)cp.onclick=function(){var n=M==='Nagad'?PAY.nagad:PAY.bkash;navigator.clipboard&&navigator.clipboard.writeText(n).then(function(){toast('নম্বর কপি হয়েছে')},function(){toast(n)})};
+    ['amAmt','amSnd'].forEach(function(id){var e=$(id);if(e)e.oninput=function(){e.value=e.value.replace(/\D/g,'')}});
+    var go=$('amGo');if(go)go.onclick=function(){
+      var a=+$('amAmt').value,s=$('amSnd').value.trim(),t=$('amTrx').value.trim();
+      if(!a||a<PAY.min)return toast('কমপক্ষে ৳'+PAY.min+' অ্যাড করতে হবে');
+      if(s.length<11)return toast('সঠিক ১১ ডিজিটের নম্বর দিন');
+      if(t.length<5)return toast('সঠিক TrxID দিন');
+      var id='DP'+Date.now().toString().slice(-9),d={id:id,userId:U.uid,email:U.email,name:U.name,amount:a,method:M,sender:s,trx:t,status:'Pending',createdAt:new Date().toISOString()};
+      go.disabled=true;
+      Promise.all([RG.fb('PUT','deposits/'+id,d),RG.fb('PUT','userDeps/'+U.uid+'/'+id,d)]).then(function(){amt=snd=trx='';U.deps=[d].concat(U.deps||[]);toast('রিকোয়েস্ট জমা হয়েছে ✓ অ্যাডমিন অ্যাপ্রুভ করলে ব্যালেন্স যোগ হবে');amRender()}).catch(function(){go.disabled=false;toast('জমা হয়নি, ইন্টারনেট চেক করুন')});
+    };
+  }
+  function route(){
+    var on=location.hash==='#add-money';
+    if(on){['homeView','siteFooter','ffView','uidView','wmView','wlView','luView','inView','ucView','orView','cdView','acView','trView','ctView','cxView'].forEach(function(i){var e=$(i);if(e)e.hidden=true});
+      am.hidden=false;amRender();if(!was)window.scrollTo(0,0)}
+    else am.hidden=true;
+    was=on;
+  }
+  window.addEventListener('hashchange',function(){setTimeout(route,0)});route();ui();
 })();
 </script>
 
